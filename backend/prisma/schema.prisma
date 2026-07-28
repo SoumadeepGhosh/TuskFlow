@@ -50,9 +50,7 @@ enum UserStatus {
 
 model RefreshToken {
   id          Int      @id @default(autoincrement())
-
   userId      Int
-
   tokenHash   String
   expiresAt   DateTime
   revokedAt   DateTime?
@@ -64,7 +62,6 @@ model RefreshToken {
 }
 model Workspace {
   id          Int      @id @default(autoincrement())
-
   name        String
   slug        String   @unique
   description String?
@@ -84,10 +81,8 @@ model Workspace {
 }
 model WorkspaceMember {
   id            Int      @id @default(autoincrement())
-
   workspaceId   Int
   userId        Int
-
   role          WorkspaceRole
   status        MemberStatus
 
@@ -202,14 +197,11 @@ enum ProjectRole {
 
 model Board {
   id           Int      @id @default(autoincrement())
-
   projectId    Int
 
   name         String
   description  String?
-
   position     Int
-
   createdBy    Int
 
   createdAt    DateTime @default(now())
