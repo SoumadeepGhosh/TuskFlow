@@ -26,4 +26,8 @@ export const envSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
 });
 
+export function validate(config: Record<string, unknown>) {
+  return envSchema.parse(config);
+}
+
 export type Env = z.infer<typeof envSchema>;

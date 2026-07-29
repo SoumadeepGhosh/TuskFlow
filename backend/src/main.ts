@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
@@ -7,10 +8,14 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global API Prefix
-  app.setGlobalPrefix('api');
+  const configService = app.get(ConfigService);
 
-  // Global Validation
+  const port = configService.get<number>('app.port')!;
+  const apiPrefix = configService.get<string>('app.apiPrefix')!;
+  const appName = configService.get<string>('app.name')!;
+
+  app.setGlobalPrefix(apiPrefix);
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -19,9 +24,8 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger Configuration
   const config = new DocumentBuilder()
-    .setTitle('TaskFlow API')
+    .setTitle(`${appName} API`)
     .setDescription('Production Ready Project Management SaaS API')
     .setVersion('1.0')
     .addBearerAuth()
@@ -31,13 +35,10 @@ async function bootstrap() {
 
   SwaggerModule.setup('docs', app, document);
 
-  await app.listen(process.env.PORT || 3001);
+  await app.listen(port);
 
-  console.log(`Server running on http://localhost:${process.env.PORT || 3001}`);
-
-  console.log(
-    `Swagger available at http://localhost:${process.env.PORT || 3001}/docs`,
-  );
+  console.log(`🚀 ${appName} running on http://localhost:${port}`);
+  console.log(`📚 Swagger: http://localhost:${port}/docs`);
 }
 
 bootstrap();
