@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ApiErrorResponse } from '../interfaces/api-error-response.interface';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -20,7 +21,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    response.status(status).json({
+    const errorResponse: ApiErrorResponse = {
       success: false,
       statusCode: status,
       message:
@@ -29,6 +30,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           : 'Internal Server Error',
       path: request.url,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    response.status(status).json(errorResponse);
   }
 }
