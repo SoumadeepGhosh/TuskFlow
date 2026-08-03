@@ -1,13 +1,22 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { RegisterDto } from './dto/register.dto';
+import {
+  LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
+  RegisterDto,
+} from './dto/request.dto';
 import { AuthRepository } from './repositories/auth.repository';
 import { PasswordService } from '../../common/password/password.service';
-import { LoginDto } from './dto/login.dto';
 import { TokenService } from 'src/common/token/token.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -90,5 +99,105 @@ export class AuthService {
 
   getProfile(user: JwtPayload) {
     return user;
+  }
+  async refresh(refreshTokenDto: RefreshTokenDto) {
+    // 1. Verify refresh token
+    const payload = this.tokenService.verifyRefreshToken(
+      refreshTokenDto.refreshToken,
+    );
+
+    // 2. Find all active refresh tokens for user
+    const refreshTokens = await this.authRepository.findRefreshTokensByUserId(
+      payload.sub,
+    );
+
+    // 3. Find matching refresh token
+    let matchedToken: (typeof refreshTokens)[number] | null = null;
+
+    for (const token of refreshTokens) {
+      const isMatch = await this.passwordService.compare(
+        refreshTokenDto.refreshToken,
+        token.tokenHash,
+      );
+
+      if (isMatch) {
+        matchedToken = token;
+        break;
+      }
+    }
+
+    if (!matchedToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // 4. Delete old refresh token
+    await this.authRepository.deleteRefreshToken(matchedToken.id);
+
+    // 5. Generate new tokens
+    const newPayload: JwtPayload = {
+      sub: payload.sub,
+      email: payload.email,
+    };
+
+    const accessToken = this.tokenService.generateAccessToken(newPayload);
+
+    const refreshToken = this.tokenService.generateRefreshToken(newPayload);
+
+    // 6. Hash new refresh token
+    const refreshTokenHash = await this.passwordService.hash(refreshToken);
+
+    // 7. Save new refresh token
+    await this.authRepository.createRefreshToken({
+      userId: payload.sub,
+      tokenHash: refreshTokenHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
+    // 8. Return new tokens
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async logout(logoutDto: LogoutDto) {
+    const payload = this.tokenService.verifyRefreshToken(
+      logoutDto.refreshToken,
+    );
+
+    const refreshTokens = await this.authRepository.findRefreshTokensByUserId(
+      payload.sub,
+    );
+
+    let matchedToken: (typeof refreshTokens)[number] | null = null;
+
+    for (const token of refreshTokens) {
+      const isMatch = await this.passwordService.compare(
+        logoutDto.refreshToken,
+        token.tokenHash,
+      );
+
+      if (isMatch) {
+        matchedToken = token;
+        break;
+      }
+    }
+
+    if (!matchedToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    await this.authRepository.deleteRefreshToken(matchedToken.id);
+
+    return {
+      message: 'Logged out successfully',
+    };
+  }
+  async logoutAll(user: JwtPayload) {
+    await this.authRepository.deleteAllRefreshTokens(user.sub);
+
+    return {
+      message: 'Logged out from all devices successfully',
+    };
   }
 }

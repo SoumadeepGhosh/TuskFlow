@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './database/prisma/prisma.module';
 import { PasswordModule } from './common/password/password.module';
 import { TokenModule } from './common/token/token.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
+import { WorkspaceMemberModule } from './modules/workspace-member/workspace-member.module';
 @Module({
   imports: [
     LoggerModule,
@@ -24,6 +26,8 @@ import { TokenModule } from './common/token/token.module';
     PrismaModule,
     PasswordModule,
     TokenModule,
+    WorkspaceModule,
+    WorkspaceMemberModule,
   ],
 })
 export class AppModule {}

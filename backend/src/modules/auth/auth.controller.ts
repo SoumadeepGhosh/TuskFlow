@@ -1,8 +1,12 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import {
+  LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
+  RegisterDto,
+} from './dto/request.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -29,5 +33,22 @@ export class AuthController {
   @Get('me')
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.authService.getProfile(user);
+  }
+
+  @Post('refresh')
+  refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refresh(refreshTokenDto);
+  }
+
+  @Post('logout')
+  logout(@Body() logoutDto: LogoutDto) {
+    return this.authService.logout(logoutDto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Post('logout-all')
+  logoutAll(@CurrentUser() user: JwtPayload) {
+    return this.authService.logoutAll(user);
   }
 }

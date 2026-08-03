@@ -35,4 +35,7 @@ export class TokenService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this.jwtService.verify(token);
   }
+  verifyRefreshToken(refreshToken: string): JwtPayload {
+    return this.jwtService.verify<JwtPayload>(refreshToken);
+  }
 }

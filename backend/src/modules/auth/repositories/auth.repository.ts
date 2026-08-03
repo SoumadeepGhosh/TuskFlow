@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma/prisma.service';
 import { User } from '@prisma/client';
@@ -46,6 +50,31 @@ export class AuthRepository {
   }
 
   async revokeRefreshTokens(userId: number) {
+    return this.prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+      },
+    });
+  }
+
+  async findRefreshTokensByUserId(userId: number) {
+    return this.prisma.refreshToken.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+    });
+  }
+
+  async deleteRefreshToken(id: number) {
+    return this.prisma.refreshToken.delete({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async deleteAllRefreshTokens(userId: number) {
     return this.prisma.refreshToken.deleteMany({
       where: {
         userId,
