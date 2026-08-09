@@ -10,6 +10,7 @@ import { PasswordModule } from './common/password/password.module';
 import { TokenModule } from './common/token/token.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WorkspaceMemberModule } from './modules/workspace-member/workspace-member.module';
+import { ProjectModule } from './modules/project/project.module';
 @Module({
   imports: [
     LoggerModule,
@@ -28,6 +29,7 @@ import { WorkspaceMemberModule } from './modules/workspace-member/workspace-memb
     TokenModule,
     WorkspaceModule,
     WorkspaceMemberModule,
+    ProjectModule,
   ],
 })
 export class AppModule {}
