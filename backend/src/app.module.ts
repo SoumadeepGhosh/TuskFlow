@@ -11,6 +11,10 @@ import { TokenModule } from './common/token/token.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WorkspaceMemberModule } from './modules/workspace-member/workspace-member.module';
 import { ProjectModule } from './modules/project/project.module';
+import { ProjectMemberModule } from './modules/project-member/project-member.module';
+import { BoardModule } from './modules/board/board.module';
+import { BoardColumnModule } from './modules/board-column/board-column.module';
+import { TaskModule } from './modules/task/task.module';
 @Module({
   imports: [
     LoggerModule,
@@ -30,6 +34,10 @@ import { ProjectModule } from './modules/project/project.module';
     WorkspaceModule,
     WorkspaceMemberModule,
     ProjectModule,
+    ProjectMemberModule,
+    BoardModule,
+    BoardColumnModule,
+    TaskModule,
   ],
 })
 export class AppModule {}
