@@ -26,8 +26,13 @@ import { TaskService } from './task.service';
 
 import {
   CreateTaskDto,
+  MoveTaskDto,
   TaskPaginationDto,
+  TaskSearchDto,
   UpdateTaskDto,
+  UpdateTaskPositionDto,
+  UpdateTaskPriorityDto,
+  UpdateTaskStatusDto,
 } from './dto/request.dto';
 
 @ApiTags('Tasks')
@@ -89,5 +94,100 @@ export class TaskController {
     id: number,
   ) {
     return this.taskService.remove(id);
+  }
+
+  @Patch('tasks/:id/status')
+  updateStatus(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    dto: UpdateTaskStatusDto,
+  ) {
+    return this.taskService.updateStatus(id, dto);
+  }
+
+  @Patch('tasks/:id/priority')
+  updatePriority(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    dto: UpdateTaskPriorityDto,
+  ) {
+    return this.taskService.updatePriority(id, dto);
+  }
+
+  @Patch('tasks/:id/position')
+  updatePosition(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    dto: UpdateTaskPositionDto,
+  ) {
+    return this.taskService.updatePosition(id, dto);
+  }
+
+  @Patch('tasks/:id/complete')
+  completeTask(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.taskService.completeTask(id);
+  }
+  @Patch('tasks/:id/reopen')
+  reopenTask(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.taskService.reopenTask(id);
+  }
+  @Get('projects/:projectId/tasks/search')
+  search(
+    @Param('projectId', ParseIntPipe)
+    projectId: number,
+
+    @Query()
+    dto: TaskSearchDto,
+  ) {
+    return this.taskService.search(projectId, dto);
+  }
+
+  @Patch('tasks/:id/move')
+  moveTask(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    dto: MoveTaskDto,
+  ) {
+    return this.taskService.moveTask(id, dto);
+  }
+
+  @Get('tasks/my')
+  findMyTasks(
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.taskService.findMyTasks(user);
+  }
+
+  @Get('tasks/due-today')
+  findDueToday() {
+    return this.taskService.findDueToday();
+  }
+
+  @Get('tasks/overdue')
+  findOverdueTasks() {
+    return this.taskService.findOverdueTasks();
+  }
+
+  @Get('projects/:projectId/tasks/statistics')
+  getProjectTaskStatistics(
+    @Param('projectId', ParseIntPipe)
+    projectId: number,
+  ) {
+    return this.taskService.getProjectTaskStatistics(projectId);
   }
 }

@@ -107,4 +107,98 @@ export class CreateTaskDto {
   estimatedHours?: number;
 }
 
+export class MoveTaskDto {
+  @ApiProperty({
+    example: 2,
+    description: 'Destination board column',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  columnId!: number;
+
+  @ApiProperty({
+    example: 4,
+    description: 'New position inside destination column',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  position!: number;
+}
+export class UpdateTaskStatusDto {
+  @ApiProperty({
+    enum: TaskStatus,
+    enumName: 'TaskStatus',
+    example: TaskStatus.IN_PROGRESS,
+    description: 'Select the new task status',
+  })
+  @IsEnum(TaskStatus)
+  status!: TaskStatus;
+}
+
+export class UpdateTaskPriorityDto {
+  @ApiProperty({
+    enum: TaskPriority,
+    enumName: 'TaskPriority',
+    example: TaskPriority.HIGH,
+    description: 'Select the new task priority',
+  })
+  @IsEnum(TaskPriority)
+  priority!: TaskPriority;
+}
+
+export class UpdateTaskPositionDto {
+  @ApiProperty({
+    example: 3,
+    description: 'Task position inside the column',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  position!: number;
+}
+export class TaskSearchDto {
+  @ApiPropertyOptional({
+    example: 'JWT',
+  })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskStatus,
+  })
+  @IsOptional()
+  @IsEnum(TaskStatus)
+  status?: TaskStatus;
+
+  @ApiPropertyOptional({
+    enum: TaskPriority,
+  })
+  @IsOptional()
+  @IsEnum(TaskPriority)
+  priority?: TaskPriority;
+
+  @ApiPropertyOptional({
+    example: 1,
+    default: 1,
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @ApiPropertyOptional({
+    example: 10,
+    default: 10,
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit = 10;
+}
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {}

@@ -2,8 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import {
   CreateTaskDto,
+  MoveTaskDto,
   TaskPaginationDto,
+  TaskSearchDto,
   UpdateTaskDto,
+  UpdateTaskPositionDto,
+  UpdateTaskPriorityDto,
+  UpdateTaskStatusDto,
 } from './dto/request.dto';
 
 import { TaskRepository } from './repositories/task.repository';
@@ -109,5 +114,104 @@ export class TaskService {
     return {
       message: 'Task deleted successfully',
     };
+  }
+  async updateStatus(id: number, dto: UpdateTaskStatusDto) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const completedAt = dto.status === TaskStatus.DONE ? new Date() : null;
+
+    return this.taskRepository.updateTaskStatus(id, dto.status, completedAt);
+  }
+
+  async updatePriority(id: number, dto: UpdateTaskPriorityDto) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.taskRepository.updateTaskPriority(id, dto.priority);
+  }
+  async updatePosition(id: number, dto: UpdateTaskPositionDto) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.taskRepository.updateTaskPosition(id, dto.position);
+  }
+  async completeTask(id: number) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.taskRepository.completeTask(id);
+  }
+  async reopenTask(id: number) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.taskRepository.reopenTask(id);
+  }
+  async search(projectId: number, dto: TaskSearchDto) {
+    const project = await this.taskRepository.findProject(projectId);
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const tasks = await this.taskRepository.searchTasks(projectId, dto);
+
+    const total = await this.taskRepository.countSearchTasks(projectId, dto);
+
+    return {
+      items: tasks,
+      meta: {
+        page: dto.page,
+        limit: dto.limit,
+        total,
+        totalPages: Math.ceil(total / dto.limit),
+      },
+    };
+  }
+  async findMyTasks(user: JwtPayload) {
+    return this.taskRepository.findMyTasks(user.sub);
+  }
+
+  async findDueToday() {
+    return this.taskRepository.findDueToday();
+  }
+
+  async findOverdueTasks() {
+    return this.taskRepository.findOverdueTasks();
+  }
+
+  async getProjectTaskStatistics(projectId: number) {
+    const project = await this.taskRepository.findProject(projectId);
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return this.taskRepository.getProjectTaskStatistics(projectId);
+  }
+  async moveTask(id: number, dto: MoveTaskDto) {
+    const task = await this.taskRepository.findTaskById(id);
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.taskRepository.moveTask(id, dto.columnId, dto.position);
   }
 }
