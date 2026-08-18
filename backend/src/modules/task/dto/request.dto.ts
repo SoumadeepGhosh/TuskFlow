@@ -108,3 +108,77 @@ export class CreateTaskDto {
 }
 
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
+export class UpdateTaskStatusDto {
+  @ApiProperty({
+    enum: TaskStatus,
+    example: TaskStatus.IN_PROGRESS,
+  })
+  @IsEnum(TaskStatus)
+  status!: TaskStatus;
+}
+export class UpdateTaskPriorityDto {
+  @ApiProperty({
+    enum: TaskPriority,
+    enumName: 'TaskPriority',
+    example: TaskPriority.HIGH,
+    description: 'New task priority',
+  })
+  @IsEnum(TaskPriority)
+  priority!: TaskPriority;
+}
+
+export class UpdateTaskPositionDto {
+  @ApiProperty({
+    example: 3,
+    description: 'New task position',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  position!: number;
+}
+
+export class MoveTaskDto {
+  @ApiProperty({
+    example: 2,
+    description: 'Destination column id',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  columnId!: number;
+
+  @ApiProperty({
+    example: 4,
+    description: 'New position inside destination column',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  position!: number;
+}
+
+export class TaskSearchDto extends TaskPaginationDto {
+  @ApiPropertyOptional({
+    example: 'JWT',
+  })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({
+    enum: TaskStatus,
+    enumName: 'TaskStatus',
+  })
+  @IsOptional()
+  @IsEnum(TaskStatus)
+  status?: TaskStatus;
+
+  @ApiPropertyOptional({
+    enum: TaskPriority,
+    enumName: 'TaskPriority',
+  })
+  @IsOptional()
+  @IsEnum(TaskPriority)
+  priority?: TaskPriority;
+}

@@ -15,6 +15,11 @@ import { ProjectMemberModule } from './modules/project-member/project-member.mod
 import { BoardModule } from './modules/board/board.module';
 import { BoardColumnModule } from './modules/board-column/board-column.module';
 import { TaskModule } from './modules/task/task.module';
+import { CommentModule } from './modules/comment/comment.module';
+import { TaskAssigneeModule } from './modules/task-assignee/task-assignee.module';
+import { LabelModule } from './modules/label/label.module';
+import { TaskLabelModule } from './modules/task-label/task-label.module';
+import { ActivityModule } from './modules/activity/activity.module';
 @Module({
   imports: [
     LoggerModule,
@@ -38,6 +43,16 @@ import { TaskModule } from './modules/task/task.module';
     BoardModule,
     BoardColumnModule,
     TaskModule,
+
+    CommentModule,
+
+    TaskAssigneeModule,
+
+    LabelModule,
+
+    TaskLabelModule,
+
+    ActivityModule,
   ],
 })
 export class AppModule {}
