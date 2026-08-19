@@ -20,6 +20,8 @@ import { TaskAssigneeModule } from './modules/task-assignee/task-assignee.module
 import { LabelModule } from './modules/label/label.module';
 import { TaskLabelModule } from './modules/task-label/task-label.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { StorageModule } from './common/storage';
+import { AttachmentModule } from './modules/attachment/attachment.module';
 @Module({
   imports: [
     LoggerModule,
@@ -31,6 +33,7 @@ import { ActivityModule } from './modules/activity/activity.module';
       load: configuration,
       validate,
     }),
+    StorageModule,
     HealthModule,
     AuthModule,
     PrismaModule,
@@ -43,16 +46,12 @@ import { ActivityModule } from './modules/activity/activity.module';
     BoardModule,
     BoardColumnModule,
     TaskModule,
-
     CommentModule,
-
     TaskAssigneeModule,
-
     LabelModule,
-
     TaskLabelModule,
-
     ActivityModule,
+    AttachmentModule,
   ],
 })
 export class AppModule {}

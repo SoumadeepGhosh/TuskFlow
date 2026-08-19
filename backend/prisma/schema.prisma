@@ -26,6 +26,7 @@ model User {
   assignedTasks    TaskAssignee[]
   ownedWorkspaces  Workspace[]
   workspaceMembers WorkspaceMember[]
+  attachments Attachment[]
 }
 
 model RefreshToken {
@@ -227,16 +228,25 @@ model Comment {
 }
 
 model Attachment {
-  id         Int      @id @default(autoincrement())
-  taskId     Int
-  uploadedBy Int
-  fileName   String
-  fileUrl    String
-  mimeType   String
-  fileSize   Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  taskId          Int
+  uploadedBy      Int
+  originalName    String
+  fileName        String
+  storageKey      String   @unique
+  fileUrl         String
+  thumbnailUrl    String?
+  mimeType        String
+  fileExtension   String
+  fileSize        Int
+  isImage         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  task            Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploader        User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([uploadedBy])
 }
 
 model Activity {
