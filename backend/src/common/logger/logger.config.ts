@@ -1,24 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import * as crypto from 'crypto';
 import { Params } from 'nestjs-pino';
 
 export const loggerConfig: Params = {
   pinoHttp: {
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
 
-    transport:
-      process.env.NODE_ENV !== 'production'
-        ? {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-              singleLine: false,
-              translateTime: 'SYS:standard',
-              ignore: 'pid,hostname',
-            },
-          }
-        : undefined,
-
+    transport: {
+      target: 'pino-elasticsearch',
+      options: {
+        node: 'http://localhost:9200',
+        index: 'taskflow-logs',
+      },
+    },
     autoLogging: true,
 
     genReqId: (req) => {
@@ -38,6 +33,8 @@ export const loggerConfig: Params = {
     },
 
     customProps: (req: any) => ({
+      service: 'taskflow-backend',
+      environment: process.env.NODE_ENV,
       ip: req.socket?.remoteAddress,
       userAgent: req.headers['user-agent'],
     }),
