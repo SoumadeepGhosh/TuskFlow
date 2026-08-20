@@ -1,14 +1,27 @@
+import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
+  // Configuration
+  const configService = app.get(ConfigService);
 
-  // Global API Prefix
-  app.setGlobalPrefix('api');
+  const port = configService.get<number>('app.port')!;
+  const apiPrefix = configService.get<string>('app.apiPrefix')!;
+  const appName = configService.get<string>('app.name')!;
+
+  // Global Prefix
+  app.setGlobalPrefix(apiPrefix);
 
   // Global Validation
   app.useGlobalPipes(
@@ -19,25 +32,37 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger Configuration
-  const config = new DocumentBuilder()
-    .setTitle('TaskFlow API')
+  // Global Exception Filter
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Global Response Interceptor
+  app.useGlobalInterceptors(new TransformResponseInterceptor());
+
+  // Swagger
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle(`${appName} API`)
     .setDescription('Production Ready Project Management SaaS API')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      },
+      'access-token',
+    )
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
 
-  await app.listen(process.env.PORT || 3001);
+  // Start Server
+  await app.listen(port);
 
-  console.log(`Server running on http://localhost:${process.env.PORT || 3001}`);
-
-  console.log(
-    `Swagger available at http://localhost:${process.env.PORT || 3001}/docs`,
-  );
+  console.log(`🚀 ${appName} running on http://localhost:${port}`);
+  console.log(`📚 Swagger: http://localhost:${port}/${apiPrefix}/docs`);
 }
 
 bootstrap();
