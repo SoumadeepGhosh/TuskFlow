@@ -22,6 +22,9 @@ import { TaskLabelModule } from './modules/task-label/task-label.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { StorageModule } from './common/storage';
 import { AttachmentModule } from './modules/attachment/attachment.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { EmailModule } from './modules/email/email.module';
+import { SocketModule } from './modules/socket/socket.module';
 @Module({
   imports: [
     LoggerModule,
@@ -52,6 +55,9 @@ import { AttachmentModule } from './modules/attachment/attachment.module';
     TaskLabelModule,
     ActivityModule,
     AttachmentModule,
+    NotificationModule,
+    EmailModule,
+    SocketModule,
   ],
 })
 export class AppModule {}

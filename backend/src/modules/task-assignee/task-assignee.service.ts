@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
+import { NotificationType } from '@prisma/client';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 import { TaskAssigneeRepository } from './repositories/task-assignee.repository';
@@ -12,11 +12,15 @@ import {
   AssignTaskAssigneeDto,
   TaskAssigneePaginationDto,
 } from './dto/request.dto';
+import { NotificationService } from '../notification/notification.service';
+import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class TaskAssigneeService {
   constructor(
     private readonly taskAssigneeRepository: TaskAssigneeRepository,
+    private readonly notificationService: NotificationService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async assignUser(
@@ -45,11 +49,25 @@ export class TaskAssigneeService {
       throw new ConflictException('User is already assigned to this task');
     }
 
-    return this.taskAssigneeRepository.assignUser({
+    const assignment = await this.taskAssigneeRepository.assignUser({
       taskId,
       userId: dto.userId,
       assignedBy: user.sub,
     });
+
+    const notification = await this.notificationService.createNotification({
+      recipientId: dto.userId,
+      senderId: user.sub,
+      type: NotificationType.TASK_ASSIGNED,
+      title: 'Task Assigned',
+      message: `You have been assigned to "${task.title}"`,
+      entityType: 'task',
+      entityId: task.id,
+    });
+
+    this.socketGateway.sendNotification(dto.userId, notification);
+
+    return assignment;
   }
 
   async findTaskAssignees(
