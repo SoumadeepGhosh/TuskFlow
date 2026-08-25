@@ -13,14 +13,12 @@ import {
   TaskAssigneePaginationDto,
 } from './dto/request.dto';
 import { NotificationService } from '../notification/notification.service';
-import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class TaskAssigneeService {
   constructor(
     private readonly taskAssigneeRepository: TaskAssigneeRepository,
     private readonly notificationService: NotificationService,
-    private readonly socketGateway: SocketGateway,
   ) {}
 
   async assignUser(
@@ -35,7 +33,11 @@ export class TaskAssigneeService {
     }
 
     const assignee = await this.taskAssigneeRepository.findUser(dto.userId);
+    const sender = await this.taskAssigneeRepository.findUser(user.sub);
 
+    if (!sender) {
+      throw new NotFoundException('Sender not found');
+    }
     if (!assignee) {
       throw new NotFoundException('User not found');
     }
@@ -55,17 +57,26 @@ export class TaskAssigneeService {
       assignedBy: user.sub,
     });
 
-    const notification = await this.notificationService.createNotification({
+    await this.notificationService.createNotification({
       recipientId: dto.userId,
       senderId: user.sub,
-      type: NotificationType.TASK_ASSIGNED,
-      title: 'Task Assigned',
-      message: `You have been assigned to "${task.title}"`,
-      entityType: 'task',
-      entityId: task.id,
-    });
 
-    this.socketGateway.sendNotification(dto.userId, notification);
+      type: NotificationType.TASK_ASSIGNED,
+
+      title: 'Task Assigned',
+
+      message: `You have been assigned to "${task.title}"`,
+
+      entityType: 'task',
+
+      entityId: task.id,
+
+      recipientEmail: assignee.email,
+
+      recipientName: assignee.name,
+
+      senderName: sender.name,
+    });
 
     return assignment;
   }

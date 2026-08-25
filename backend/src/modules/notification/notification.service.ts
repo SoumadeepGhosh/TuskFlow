@@ -14,11 +14,12 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { NotificationPaginationDto } from './dto/request.dto';
 
 import { NotificationRepository } from './repositories/notification.repository';
-
+import { NotificationDispatcherService } from '../notification-dispatcher/notification-dispatcher.service';
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly notificationRepository: NotificationRepository,
+    private readonly dispatcher: NotificationDispatcherService,
   ) {}
 
   async findAll(user: JwtPayload, pagination: NotificationPaginationDto) {
@@ -103,8 +104,27 @@ export class NotificationService {
     message: string;
     entityType?: string;
     entityId?: number;
+
+    recipientEmail?: string;
+    recipientName?: string;
+    senderName?: string;
   }) {
-    const notification = await this.notificationRepository.create(data);
+    const notification = await this.notificationRepository.create({
+      recipientId: data.recipientId,
+      senderId: data.senderId,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      entityType: data.entityType,
+      entityId: data.entityId,
+    });
+
+    await this.dispatcher.dispatch({
+      notification,
+      recipientEmail: data.recipientEmail,
+      recipientName: data.recipientName,
+      senderName: data.senderName,
+    });
 
     return notification;
   }

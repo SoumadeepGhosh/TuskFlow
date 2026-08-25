@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
+
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationRepository } from './repositories/notification.repository';
-import { SocketModule } from '../socket/socket.module';
-import { EmailModule } from '../email/email.module';
+
+import { NotificationDispatcherModule } from '../notification-dispatcher/notification-dispatcher.module';
 
 @Module({
-  imports: [SocketModule, EmailModule],
+  imports: [NotificationDispatcherModule],
 
   controllers: [NotificationController],
 
