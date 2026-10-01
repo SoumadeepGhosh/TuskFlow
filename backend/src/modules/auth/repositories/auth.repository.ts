@@ -18,6 +18,14 @@ export class AuthRepository {
     });
   }
 
+  async findUserById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
   async createUser(data: {
     name: string;
     email: string;

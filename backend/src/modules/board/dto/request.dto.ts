@@ -31,9 +31,29 @@ export class BoardPaginationDto {
   @Min(1)
   @Max(100)
   limit = 10;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by project ID',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  projectId?: number;
 }
 
 export class CreateBoardDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Project ID (if not provided in route)',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  projectId?: number;
+
   @ApiProperty({
     example: 'Sprint Board',
   })

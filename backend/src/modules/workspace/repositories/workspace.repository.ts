@@ -55,8 +55,11 @@ export class WorkspaceRepository {
   async findAllByOwner(ownerId: number, page: number, limit: number) {
     return this.prisma.workspace.findMany({
       where: {
-        ownerId,
         deletedAt: null,
+        OR: [
+          { ownerId },
+          { members: { some: { userId: ownerId } } },
+        ],
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -71,6 +74,25 @@ export class WorkspaceRepository {
       where: {
         id,
         deletedAt: null,
+      },
+      include: {
+        projects: {
+          where: {
+            deletedAt: null,
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
       },
     });
   }

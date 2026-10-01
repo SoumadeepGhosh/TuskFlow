@@ -34,9 +34,39 @@ export class TaskPaginationDto {
   @Min(1)
   @Max(100)
   limit = 10;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by column ID',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  columnId?: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by project ID',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  projectId?: number;
 }
 
 export class CreateTaskDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Column ID (if not provided in route)',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  columnId?: number;
+
   @ApiProperty({
     example: 'Implement JWT Authentication',
   })

@@ -34,9 +34,29 @@ export class ProjectPaginationDto {
   @Min(1)
   @Max(100)
   limit = 10;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by workspace ID',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  workspaceId?: number;
 }
 
 export class CreateProjectDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Workspace ID (if not provided in route)',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  workspaceId?: number;
+
   @ApiProperty({
     example: 'TaskFlow Backend',
   })

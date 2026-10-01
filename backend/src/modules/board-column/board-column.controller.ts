@@ -33,6 +33,14 @@ import {
 export class BoardColumnController {
   constructor(private readonly boardColumnService: BoardColumnService) {}
 
+  @Post('columns')
+  createDirect(
+    @Body()
+    dto: CreateBoardColumnDto,
+  ) {
+    return this.boardColumnService.create(dto.boardId, dto);
+  }
+
   @Post('boards/:boardId/columns')
   create(
     @Param('boardId', ParseIntPipe)
@@ -41,6 +49,23 @@ export class BoardColumnController {
     dto: CreateBoardColumnDto,
   ) {
     return this.boardColumnService.create(boardId, dto);
+  }
+
+  @ApiPagination()
+  @Get('columns')
+  findAllColumns(
+    @Query('boardId')
+    boardId?: number,
+    @Query('page')
+    page?: number,
+    @Query('limit')
+    limit?: number,
+  ) {
+    return this.boardColumnService.findAll(boardId ? Number(boardId) : undefined, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      boardId: boardId ? Number(boardId) : undefined,
+    } as BoardColumnPaginationDto);
   }
 
   @ApiPagination()

@@ -40,11 +40,12 @@ export class TaskRepository {
     });
   }
 
-  findTasks(columnId: number, page: number, limit: number) {
+  findTasks(columnId?: number, page = 1, limit = 10, projectId?: number) {
     return this.prisma.task.findMany({
       where: {
-        columnId,
         deletedAt: null,
+        ...(columnId && { columnId }),
+        ...(projectId && { projectId }),
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -60,15 +61,39 @@ export class TaskRepository {
             avatarUrl: true,
           },
         },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        labels: {
+          include: {
+            label: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            attachments: true,
+          },
+        },
       },
     });
   }
 
-  countTasks(columnId: number) {
+  countTasks(columnId?: number, projectId?: number) {
     return this.prisma.task.count({
       where: {
-        columnId,
         deletedAt: null,
+        ...(columnId && { columnId }),
+        ...(projectId && { projectId }),
       },
     });
   }
@@ -86,6 +111,48 @@ export class TaskRepository {
             name: true,
             email: true,
             avatarUrl: true,
+          },
+        },
+        column: true,
+        project: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        labels: {
+          include: {
+            label: true,
+          },
+        },
+        comments: {
+          where: {
+            deletedAt: null,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        attachments: {
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },

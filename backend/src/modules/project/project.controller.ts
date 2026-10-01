@@ -29,6 +29,16 @@ import { ApiPagination } from 'src/common/decorators/api-pagination.decorator';
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  @Post('projects')
+  createDirect(
+    @Body()
+    dto: CreateProjectDto,
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.projectService.create(dto.workspaceId, dto, user);
+  }
+
   @Post('workspaces/:workspaceId/projects')
   create(
     @Param('workspaceId', ParseIntPipe)
@@ -41,6 +51,29 @@ export class ProjectController {
     user: JwtPayload,
   ) {
     return this.projectService.create(workspaceId, dto, user);
+  }
+
+  @ApiPagination()
+  @Get('projects')
+  findAllProjects(
+    @CurrentUser()
+    user: JwtPayload,
+    @Query('page')
+    page?: number,
+    @Query('limit')
+    limit?: number,
+    @Query('workspaceId')
+    workspaceId?: number,
+  ) {
+    return this.projectService.findAll(
+      workspaceId ? Number(workspaceId) : undefined,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        workspaceId: workspaceId ? Number(workspaceId) : undefined,
+      },
+      user,
+    );
   }
 
   @ApiPagination()

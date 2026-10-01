@@ -30,10 +30,10 @@ export class BoardRepository {
     });
   }
 
-  findBoards(projectId: number, page: number, limit: number) {
+  findBoards(projectId?: number, page = 1, limit = 10) {
     return this.prisma.board.findMany({
       where: {
-        projectId,
+        ...(projectId && { projectId }),
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -43,10 +43,10 @@ export class BoardRepository {
     });
   }
 
-  countBoards(projectId: number) {
+  countBoards(projectId?: number) {
     return this.prisma.board.count({
       where: {
-        projectId,
+        ...(projectId && { projectId }),
       },
     });
   }
@@ -55,6 +55,56 @@ export class BoardRepository {
     return this.prisma.board.findUnique({
       where: {
         id,
+      },
+      include: {
+        columns: {
+          orderBy: {
+            position: 'asc',
+          },
+          include: {
+            tasks: {
+              where: {
+                deletedAt: null,
+              },
+              orderBy: {
+                position: 'asc',
+              },
+              include: {
+                reporter: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    avatarUrl: true,
+                  },
+                },
+                assignees: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+                labels: {
+                  include: {
+                    label: true,
+                  },
+                },
+                _count: {
+                  select: {
+                    comments: true,
+                    attachments: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
   }

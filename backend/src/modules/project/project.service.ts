@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -20,8 +21,17 @@ import { ProjectRepository } from './repositories/project.repository';
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  async create(workspaceId: number, dto: CreateProjectDto, user: JwtPayload) {
-    const workspace = await this.projectRepository.findWorkspace(workspaceId);
+  async create(
+    workspaceId: number | undefined,
+    dto: CreateProjectDto,
+    user: JwtPayload,
+  ) {
+    const targetWorkspaceId = workspaceId ?? dto.workspaceId;
+    if (!targetWorkspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+
+    const workspace = await this.projectRepository.findWorkspace(targetWorkspaceId);
 
     if (!workspace) {
       throw new NotFoundException('Workspace not found');
@@ -34,7 +44,7 @@ export class ProjectService {
     }
 
     const existingProject = await this.projectRepository.findByKey(
-      workspaceId,
+      targetWorkspaceId,
       dto.key,
     );
 
@@ -43,7 +53,7 @@ export class ProjectService {
     }
 
     return this.projectRepository.createProject({
-      workspaceId,
+      workspaceId: targetWorkspaceId,
       name: dto.name,
       key: dto.key.toUpperCase(),
       description: dto.description,
@@ -56,29 +66,58 @@ export class ProjectService {
     });
   }
 
-  async findAll(workspaceId: number, pagination: ProjectPaginationDto) {
-    const workspace = await this.projectRepository.findWorkspace(workspaceId);
+  async findAll(
+    workspaceId: number | undefined,
+    pagination: ProjectPaginationDto,
+    user?: JwtPayload,
+  ) {
+    const targetWorkspaceId = workspaceId ?? pagination.workspaceId;
 
-    if (!workspace) {
-      throw new NotFoundException('Workspace not found');
+    if (targetWorkspaceId) {
+      const workspace =
+        await this.projectRepository.findWorkspace(targetWorkspaceId);
+
+      if (!workspace) {
+        throw new NotFoundException('Workspace not found');
+      }
+
+      const projects = await this.projectRepository.findAllByWorkspace(
+        targetWorkspaceId,
+        pagination.page,
+        pagination.limit,
+      );
+
+      const total =
+        await this.projectRepository.countByWorkspace(targetWorkspaceId);
+
+      return {
+        items: projects,
+        meta: {
+          page: pagination.page,
+          limit: pagination.limit,
+          total,
+          totalPages: Math.ceil(total / pagination.limit),
+        },
+      };
     }
 
-    const projects = await this.projectRepository.findAllByWorkspace(
-      workspaceId,
+    const projects = await this.projectRepository.findAll(
       pagination.page,
       pagination.limit,
+      undefined,
+      user?.sub,
     );
 
-    const total = await this.projectRepository.countByWorkspace(workspaceId);
+    const total = await this.projectRepository.countAll(undefined, user?.sub);
 
     return {
       items: projects,
-      total,
-      page: pagination.page,
-      limit: pagination.limit,
-      totalPages: Math.ceil(total / pagination.limit),
-      hasNextPage: pagination.page * pagination.limit < total,
-      hasPreviousPage: pagination.page > 1,
+      meta: {
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        totalPages: Math.ceil(total / pagination.limit),
+      },
     };
   }
 

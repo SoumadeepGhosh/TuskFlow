@@ -31,9 +31,29 @@ export class BoardColumnPaginationDto {
   @Min(1)
   @Max(100)
   limit = 10;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Filter by board ID',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  boardId?: number;
 }
 
 export class CreateBoardColumnDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Board ID (if not provided in route)',
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  boardId?: number;
+
   @ApiProperty({
     example: 'To Do',
   })

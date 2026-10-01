@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import {
   CreateTaskDto,
@@ -19,15 +23,25 @@ import { TaskStatus } from '@prisma/client';
 export class TaskService {
   constructor(private readonly taskRepository: TaskRepository) {}
 
-  async create(columnId: number, dto: CreateTaskDto, user: JwtPayload) {
-    const column = await this.taskRepository.findColumn(columnId);
+  async create(
+    columnId: number | undefined,
+    dto: CreateTaskDto,
+    user: JwtPayload,
+  ) {
+    const targetColumnId = columnId ?? dto.columnId;
+
+    if (!targetColumnId) {
+      throw new BadRequestException('columnId is required');
+    }
+
+    const column = await this.taskRepository.findColumn(targetColumnId);
 
     if (!column) {
       throw new NotFoundException('Board column not found');
     }
 
     return this.taskRepository.createTask({
-      columnId,
+      columnId: targetColumnId,
       projectId: column.board.projectId,
       reporterId: user.sub,
       title: dto.title,
@@ -41,20 +55,31 @@ export class TaskService {
     });
   }
 
-  async findAll(columnId: number, pagination: TaskPaginationDto) {
-    const column = await this.taskRepository.findColumn(columnId);
+  async findAll(
+    columnId: number | undefined,
+    pagination: TaskPaginationDto,
+  ) {
+    const targetColumnId = columnId ?? pagination.columnId;
 
-    if (!column) {
-      throw new NotFoundException('Board column not found');
+    if (targetColumnId) {
+      const column = await this.taskRepository.findColumn(targetColumnId);
+
+      if (!column) {
+        throw new NotFoundException('Board column not found');
+      }
     }
 
     const tasks = await this.taskRepository.findTasks(
-      columnId,
+      targetColumnId,
       pagination.page,
       pagination.limit,
+      pagination.projectId,
     );
 
-    const total = await this.taskRepository.countTasks(columnId);
+    const total = await this.taskRepository.countTasks(
+      targetColumnId,
+      pagination.projectId,
+    );
 
     return {
       items: tasks,

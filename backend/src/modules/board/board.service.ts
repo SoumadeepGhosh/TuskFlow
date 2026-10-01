@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import {
   BoardPaginationDto,
@@ -13,15 +17,25 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 export class BoardService {
   constructor(private readonly boardRepository: BoardRepository) {}
 
-  async create(projectId: number, dto: CreateBoardDto, user: JwtPayload) {
-    const project = await this.boardRepository.findProject(projectId);
+  async create(
+    projectId: number | undefined,
+    dto: CreateBoardDto,
+    user: JwtPayload,
+  ) {
+    const targetProjectId = projectId ?? dto.projectId;
+
+    if (!targetProjectId) {
+      throw new BadRequestException('projectId is required');
+    }
+
+    const project = await this.boardRepository.findProject(targetProjectId);
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
     return this.boardRepository.createBoard({
-      projectId,
+      projectId: targetProjectId,
       name: dto.name,
       description: dto.description,
       position: dto.position,
@@ -29,20 +43,27 @@ export class BoardService {
     });
   }
 
-  async findAll(projectId: number, pagination: BoardPaginationDto) {
-    const project = await this.boardRepository.findProject(projectId);
+  async findAll(
+    projectId: number | undefined,
+    pagination: BoardPaginationDto,
+  ) {
+    const targetProjectId = projectId ?? pagination.projectId;
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
+    if (targetProjectId) {
+      const project = await this.boardRepository.findProject(targetProjectId);
+
+      if (!project) {
+        throw new NotFoundException('Project not found');
+      }
     }
 
     const boards = await this.boardRepository.findBoards(
-      projectId,
+      targetProjectId,
       pagination.page,
       pagination.limit,
     );
 
-    const total = await this.boardRepository.countBoards(projectId);
+    const total = await this.boardRepository.countBoards(targetProjectId);
 
     return {
       items: boards,

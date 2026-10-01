@@ -24,10 +24,10 @@ export class BoardColumnRepository {
     });
   }
 
-  findColumns(boardId: number, page: number, limit: number) {
+  findColumns(boardId?: number, page = 1, limit = 10) {
     return this.prisma.boardColumn.findMany({
       where: {
-        boardId,
+        ...(boardId && { boardId }),
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -37,10 +37,10 @@ export class BoardColumnRepository {
     });
   }
 
-  countColumns(boardId: number) {
+  countColumns(boardId?: number) {
     return this.prisma.boardColumn.count({
       where: {
-        boardId,
+        ...(boardId && { boardId }),
       },
     });
   }
@@ -49,6 +49,16 @@ export class BoardColumnRepository {
     return this.prisma.boardColumn.findUnique({
       where: {
         id,
+      },
+      include: {
+        tasks: {
+          where: {
+            deletedAt: null,
+          },
+          orderBy: {
+            position: 'asc',
+          },
+        },
       },
     });
   }

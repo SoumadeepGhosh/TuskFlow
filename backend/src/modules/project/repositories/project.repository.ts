@@ -70,11 +70,83 @@ export class ProjectRepository {
     });
   }
 
+  async findAll(page: number, limit: number, workspaceId?: number, userId?: number) {
+    return this.prisma.project.findMany({
+      where: {
+        deletedAt: null,
+        ...(workspaceId && { workspaceId }),
+        ...(userId && {
+          OR: [
+            { createdBy: userId },
+            { members: { some: { userId } } },
+            { workspace: { members: { some: { userId } } } },
+          ],
+        }),
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async countAll(workspaceId?: number, userId?: number) {
+    return this.prisma.project.count({
+      where: {
+        deletedAt: null,
+        ...(workspaceId && { workspaceId }),
+        ...(userId && {
+          OR: [
+            { createdBy: userId },
+            { members: { some: { userId } } },
+            { workspace: { members: { some: { userId } } } },
+          ],
+        }),
+      },
+    });
+  }
+
   async findById(id: number) {
     return this.prisma.project.findFirst({
       where: {
         id,
         deletedAt: null,
+      },
+      include: {
+        boards: {
+          include: {
+            columns: {
+              orderBy: {
+                position: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            position: 'asc',
+          },
+        },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            tasks: {
+              where: {
+                deletedAt: null,
+              },
+            },
+          },
+        },
       },
     });
   }

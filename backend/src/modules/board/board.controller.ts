@@ -36,6 +36,14 @@ import { ApiPagination } from 'src/common/decorators/api-pagination.decorator';
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
+  @Post('boards')
+  createDirect(
+    @Body() dto: CreateBoardDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.boardService.create(dto.projectId, dto, user);
+  }
+
   @Post('projects/:projectId/boards')
   create(
     @Param('projectId', ParseIntPipe)
@@ -44,6 +52,20 @@ export class BoardController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.boardService.create(projectId, dto, user);
+  }
+
+  @ApiPagination()
+  @Get('boards')
+  findAllBoards(
+    @Query('projectId') projectId?: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.boardService.findAll(projectId ? Number(projectId) : undefined, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      projectId: projectId ? Number(projectId) : undefined,
+    } as BoardPaginationDto);
   }
 
   @ApiPagination()

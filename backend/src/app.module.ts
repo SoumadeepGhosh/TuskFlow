@@ -8,6 +8,13 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './database/prisma/prisma.module';
 import { PasswordModule } from './common/password/password.module';
 import { TokenModule } from './common/token/token.module';
+import { StorageModule } from './common/storage/storage.module';
+import { QueueModule } from './modules/queue/queue.module';
+import { EmailModule } from './modules/email/email.module';
+import { SocketModule } from './modules/socket/socket.module';
+import { NotificationDispatcherModule } from './modules/notification-dispatcher/notification-dispatcher.module';
+import { NotificationQueueModule } from './modules/notification-queue/notification-queue.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WorkspaceMemberModule } from './modules/workspace-member/workspace-member.module';
 import { ProjectModule } from './modules/project/project.module';
@@ -15,6 +22,12 @@ import { ProjectMemberModule } from './modules/project-member/project-member.mod
 import { BoardModule } from './modules/board/board.module';
 import { BoardColumnModule } from './modules/board-column/board-column.module';
 import { TaskModule } from './modules/task/task.module';
+import { TaskAssigneeModule } from './modules/task-assignee/task-assignee.module';
+import { TaskLabelModule } from './modules/task-label/task-label.module';
+import { LabelModule } from './modules/label/label.module';
+import { CommentModule } from './modules/comment/comment.module';
+import { AttachmentModule } from './modules/attachment/attachment.module';
+
 @Module({
   imports: [
     LoggerModule,
@@ -31,6 +44,13 @@ import { TaskModule } from './modules/task/task.module';
     PrismaModule,
     PasswordModule,
     TokenModule,
+    StorageModule,
+    QueueModule,
+    EmailModule,
+    SocketModule,
+    NotificationDispatcherModule,
+    NotificationQueueModule,
+    NotificationModule,
     WorkspaceModule,
     WorkspaceMemberModule,
     ProjectModule,
@@ -38,6 +58,11 @@ import { TaskModule } from './modules/task/task.module';
     BoardModule,
     BoardColumnModule,
     TaskModule,
+    TaskAssigneeModule,
+    TaskLabelModule,
+    LabelModule,
+    CommentModule,
+    AttachmentModule,
   ],
 })
 export class AppModule {}

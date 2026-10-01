@@ -44,8 +44,6 @@ export class WorkspaceController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    console.log({ page, limit });
-
     return this.workspaceService.findAll(user, {
       page: Number(page) || 1,
       limit: Number(limit) || 10,

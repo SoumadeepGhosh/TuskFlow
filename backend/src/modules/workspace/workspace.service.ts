@@ -55,8 +55,11 @@ export class WorkspaceService {
       throw new NotFoundException('Workspace not found');
     }
 
-    // Only owner can access for now
-    if (workspace.ownerId !== user.sub) {
+    const isMember = workspace.members?.some(
+      (m: { userId: number }) => m.userId === user.sub,
+    );
+
+    if (workspace.ownerId !== user.sub && !isMember) {
       throw new ForbiddenException('Access denied');
     }
 

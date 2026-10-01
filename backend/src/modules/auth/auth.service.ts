@@ -6,6 +6,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -90,6 +91,8 @@ export class AuthService {
 
     return {
       user: safeUser,
+      accessToken,
+      refreshToken,
       tokens: {
         accessToken,
         refreshToken,
@@ -97,8 +100,15 @@ export class AuthService {
     };
   }
 
-  getProfile(user: JwtPayload) {
-    return user;
+  async getProfile(user: JwtPayload) {
+    const existingUser = await this.authRepository.findUserById(user.sub);
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const { passwordHash: _, ...safeUser } = existingUser;
+    return safeUser;
   }
   async refresh(refreshTokenDto: RefreshTokenDto) {
     // 1. Verify refresh token

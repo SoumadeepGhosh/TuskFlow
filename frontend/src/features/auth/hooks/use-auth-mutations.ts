@@ -1,0 +1,52 @@
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { authService, LoginDto, RegisterDto } from '@/services/auth.service';
+import { useAuth } from '@/providers/auth-provider';
+import { AxiosError } from 'axios';
+import { ApiError } from '@/types/api';
+
+export function useLoginMutation() {
+  const { login } = useAuth();
+
+  return useMutation({
+    mutationFn: (data: LoginDto) => authService.login(data),
+    onSuccess: (res) => {
+      const accessToken = res.accessToken || res.tokens?.accessToken;
+      const refreshToken = res.refreshToken || res.tokens?.refreshToken;
+
+      if (accessToken && refreshToken && res.user) {
+        login(accessToken, refreshToken, res.user);
+        toast.success(`Welcome back, ${res.user.name}!`);
+      } else {
+        toast.error('Authentication succeeded but tokens were missing.');
+      }
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to login. Please check your credentials.';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}
+
+export function useRegisterMutation() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (data: RegisterDto) => authService.register(data),
+    onSuccess: () => {
+      toast.success('Account created successfully! Please sign in.');
+      router.push('/login');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Registration failed. Please try again.';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}

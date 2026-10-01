@@ -14,7 +14,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { TaskPriority, TaskStatus } from '@prisma/client';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -28,7 +29,6 @@ import {
   CreateTaskDto,
   MoveTaskDto,
   TaskPaginationDto,
-  TaskSearchDto,
   UpdateTaskDto,
   UpdateTaskPositionDto,
   UpdateTaskPriorityDto,
@@ -42,6 +42,16 @@ import {
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
+  @Post('tasks')
+  createDirect(
+    @Body()
+    dto: CreateTaskDto,
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.taskService.create(dto.columnId, dto, user);
+  }
+
   @Post('columns/:columnId/tasks')
   create(
     @Param('columnId', ParseIntPipe)
@@ -52,6 +62,26 @@ export class TaskController {
     user: JwtPayload,
   ) {
     return this.taskService.create(columnId, dto, user);
+  }
+
+  @ApiPagination()
+  @Get('tasks')
+  findAllTasks(
+    @Query('columnId')
+    columnId?: number,
+    @Query('projectId')
+    projectId?: number,
+    @Query('page')
+    page?: number,
+    @Query('limit')
+    limit?: number,
+  ) {
+    return this.taskService.findAll(columnId ? Number(columnId) : undefined, {
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+      columnId: columnId ? Number(columnId) : undefined,
+      projectId: projectId ? Number(projectId) : undefined,
+    } as TaskPaginationDto);
   }
 
   @ApiPagination()
@@ -68,6 +98,70 @@ export class TaskController {
       page: Number(page) || 1,
       limit: Number(limit) || 10,
     } as TaskPaginationDto);
+  }
+
+  @Get('tasks/my')
+  findMyTasks(
+    @CurrentUser()
+    user: JwtPayload,
+  ) {
+    return this.taskService.findMyTasks(user);
+  }
+
+  @Get('tasks/due-today')
+  findDueToday() {
+    return this.taskService.findDueToday();
+  }
+
+  @Get('tasks/overdue')
+  findOverdueTasks() {
+    return this.taskService.findOverdueTasks();
+  }
+
+  @ApiPagination()
+  @ApiQuery({
+    name: 'keyword',
+    required: false,
+    type: String,
+    description: 'Search keyword in title or description',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TaskStatus,
+    description: 'Filter by task status',
+  })
+  @ApiQuery({
+    name: 'priority',
+    required: false,
+    enum: TaskPriority,
+    description: 'Filter by task priority',
+  })
+  @Get('projects/:projectId/tasks/search')
+  search(
+    @Param('projectId', ParseIntPipe)
+    projectId: number,
+    @Query('keyword') keyword?: string,
+    @Query('status') status?: TaskStatus,
+    @Query('priority') priority?: TaskPriority,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.taskService.search(projectId, {
+      keyword,
+      status,
+      priority,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+  }
+
+  @Get('projects/:projectId/tasks/statistics')
+  getProjectTaskStatistics(
+    @Param('projectId', ParseIntPipe)
+    projectId: number,
+  ) {
+    return this.taskService.getProjectTaskStatistics(projectId);
   }
 
   @Get('tasks/:id')
@@ -136,22 +230,13 @@ export class TaskController {
   ) {
     return this.taskService.completeTask(id);
   }
+
   @Patch('tasks/:id/reopen')
   reopenTask(
     @Param('id', ParseIntPipe)
     id: number,
   ) {
     return this.taskService.reopenTask(id);
-  }
-  @Get('projects/:projectId/tasks/search')
-  search(
-    @Param('projectId', ParseIntPipe)
-    projectId: number,
-
-    @Query()
-    dto: TaskSearchDto,
-  ) {
-    return this.taskService.search(projectId, dto);
   }
 
   @Patch('tasks/:id/move')
@@ -163,31 +248,5 @@ export class TaskController {
     dto: MoveTaskDto,
   ) {
     return this.taskService.moveTask(id, dto);
-  }
-
-  @Get('tasks/my')
-  findMyTasks(
-    @CurrentUser()
-    user: JwtPayload,
-  ) {
-    return this.taskService.findMyTasks(user);
-  }
-
-  @Get('tasks/due-today')
-  findDueToday() {
-    return this.taskService.findDueToday();
-  }
-
-  @Get('tasks/overdue')
-  findOverdueTasks() {
-    return this.taskService.findOverdueTasks();
-  }
-
-  @Get('projects/:projectId/tasks/statistics')
-  getProjectTaskStatistics(
-    @Param('projectId', ParseIntPipe)
-    projectId: number,
-  ) {
-    return this.taskService.getProjectTaskStatistics(projectId);
   }
 }
