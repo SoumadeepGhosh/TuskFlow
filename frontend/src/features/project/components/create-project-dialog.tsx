@@ -9,6 +9,7 @@ import {
 } from '../schemas/project.schema';
 import { useCreateProjectMutation } from '../hooks/use-projects';
 import { useWorkspaces } from '@/features/workspace/hooks/use-workspaces';
+import { Workspace } from '@/types/workspace';
 import {
   Dialog,
   DialogDescription,
@@ -42,7 +43,10 @@ export function CreateProjectDialog({
   defaultWorkspaceId,
 }: CreateProjectDialogProps) {
   const { data: workspacesData } = useWorkspaces({ limit: 50 });
-  const workspaces = workspacesData?.items ?? [];
+  const rawWorkspaces = workspacesData as unknown;
+  const workspaces: Workspace[] = Array.isArray(rawWorkspaces)
+    ? (rawWorkspaces as Workspace[])
+    : (workspacesData?.items ?? []);
 
   const { mutate: createProject, isPending } = useCreateProjectMutation();
 
@@ -74,12 +78,18 @@ export function CreateProjectDialog({
   }, [defaultWorkspaceId, workspaces, setValue]);
 
   const onSubmit = (data: CreateProjectFormData) => {
-    createProject(data, {
-      onSuccess: () => {
-        reset();
-        onOpenChange(false);
+    createProject(
+      {
+        ...data,
+        workspaceId: Number(data.workspaceId),
       },
-    });
+      {
+        onSuccess: () => {
+          reset();
+          onOpenChange(false);
+        },
+      },
+    );
   };
 
   return (
@@ -100,7 +110,9 @@ export function CreateProjectDialog({
           <select
             disabled={isPending || !!defaultWorkspaceId}
             className="w-full h-11 rounded-[14px] border border-border bg-card px-3.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-transparent"
-            {...register('workspaceId')}
+            {...register('workspaceId', {
+              setValueAs: (v) => (v === '' || isNaN(Number(v)) ? 0 : Number(v)),
+            })}
           >
             {workspaces.map((ws) => (
               <option key={ws.id} value={ws.id}>

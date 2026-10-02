@@ -17,9 +17,27 @@ export const boardService = {
   }): Promise<PaginatedResponse<Board>> {
     const res = await apiClient.get<
       unknown,
-      { data?: PaginatedResponse<Board> } & PaginatedResponse<Board>
+      | { data?: PaginatedResponse<Board> | Board[] }
+      | PaginatedResponse<Board>
+      | Board[]
     >('/boards', { params });
-    return (res?.data ?? res) as PaginatedResponse<Board>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<Board>
+      | Board[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: params?.page ?? 1,
+          limit: params?.limit ?? payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async getBoard(id: number): Promise<Board> {
@@ -54,9 +72,27 @@ export const boardService = {
   async getColumns(boardId: number): Promise<PaginatedResponse<BoardColumn>> {
     const res = await apiClient.get<
       unknown,
-      { data?: PaginatedResponse<BoardColumn> } & PaginatedResponse<BoardColumn>
+      | { data?: PaginatedResponse<BoardColumn> | BoardColumn[] }
+      | PaginatedResponse<BoardColumn>
+      | BoardColumn[]
     >(`/boards/${boardId}/columns`);
-    return (res?.data ?? res) as PaginatedResponse<BoardColumn>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<BoardColumn>
+      | BoardColumn[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: 1,
+          limit: payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async createColumn(data: CreateColumnDto): Promise<BoardColumn> {

@@ -17,9 +17,27 @@ export const workspaceService = {
   }): Promise<PaginatedResponse<Workspace>> {
     const res = await apiClient.get<
       unknown,
-      { data?: PaginatedResponse<Workspace> } & PaginatedResponse<Workspace>
+      | { data?: PaginatedResponse<Workspace> | Workspace[] }
+      | PaginatedResponse<Workspace>
+      | Workspace[]
     >('/workspaces', { params });
-    return (res?.data ?? res) as PaginatedResponse<Workspace>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<Workspace>
+      | Workspace[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: params?.page ?? 1,
+          limit: params?.limit ?? payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async getWorkspace(id: number): Promise<Workspace> {
@@ -60,11 +78,27 @@ export const workspaceService = {
   ): Promise<PaginatedResponse<WorkspaceMember>> {
     const res = await apiClient.get<
       unknown,
-      | { data?: PaginatedResponse<WorkspaceMember> }
+      | { data?: PaginatedResponse<WorkspaceMember> | WorkspaceMember[] }
       | PaginatedResponse<WorkspaceMember>
+      | WorkspaceMember[]
     >(`/workspaces/${workspaceId}/members`, { params });
-    return ((res as { data?: PaginatedResponse<WorkspaceMember> })?.data ??
-      res) as PaginatedResponse<WorkspaceMember>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<WorkspaceMember>
+      | WorkspaceMember[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: params?.page ?? 1,
+          limit: params?.limit ?? payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async addMember(

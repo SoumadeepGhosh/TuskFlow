@@ -18,9 +18,27 @@ export const projectService = {
   }): Promise<PaginatedResponse<Project>> {
     const res = await apiClient.get<
       unknown,
-      { data?: PaginatedResponse<Project> } & PaginatedResponse<Project>
+      | { data?: PaginatedResponse<Project> | Project[] }
+      | PaginatedResponse<Project>
+      | Project[]
     >('/projects', { params });
-    return (res?.data ?? res) as PaginatedResponse<Project>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<Project>
+      | Project[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: params?.page ?? 1,
+          limit: params?.limit ?? payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async getProject(id: number): Promise<Project> {
@@ -32,10 +50,24 @@ export const projectService = {
   },
 
   async createProject(data: CreateProjectDto): Promise<Project> {
+    const rawKey = data.key?.trim();
+    const fallbackKey =
+      data.name
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 4)
+        .toUpperCase() || 'PROJ';
+    const payload = {
+      ...data,
+      key: (rawKey && rawKey.length >= 2) ? rawKey.toUpperCase() : fallbackKey,
+      icon: data.icon || '📁',
+      color: data.color || '#5B5CEB',
+      status: data.status || 'ACTIVE',
+    };
     const res = await apiClient.post<
       unknown,
       { data?: Project } & Project
-    >('/projects', data);
+    >('/projects', payload);
     return (res?.data ?? res) as Project;
   },
 
@@ -71,11 +103,27 @@ export const projectService = {
   ): Promise<PaginatedResponse<ProjectMember>> {
     const res = await apiClient.get<
       unknown,
-      | { data?: PaginatedResponse<ProjectMember> }
+      | { data?: PaginatedResponse<ProjectMember> | ProjectMember[] }
       | PaginatedResponse<ProjectMember>
+      | ProjectMember[]
     >(`/projects/${projectId}/members`, { params });
-    return ((res as { data?: PaginatedResponse<ProjectMember> })?.data ??
-      res) as PaginatedResponse<ProjectMember>;
+    const payload = ((res as { data?: unknown })?.data ?? res) as
+      | PaginatedResponse<ProjectMember>
+      | ProjectMember[];
+    if (Array.isArray(payload)) {
+      return {
+        items: payload,
+        meta: {
+          total: payload.length,
+          page: params?.page ?? 1,
+          limit: params?.limit ?? payload.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+    return payload;
   },
 
   async addMember(

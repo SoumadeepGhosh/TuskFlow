@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -34,6 +34,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps) {
   // Local state for smooth optimistic drag-and-drop
   const [columns, setColumns] = useState<BoardColumn[]>(board.columns || []);
+  const columnsRef = useRef<BoardColumn[]>(board.columns || []);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   // Add column modal state
@@ -48,7 +49,9 @@ export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps)
 
   // Sync columns with board updates from query
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setColumns(board.columns || []);
+    columnsRef.current = board.columns || [];
   }, [board.columns]);
 
   const sensors = useSensors(
@@ -62,15 +65,20 @@ export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps)
     })
   );
 
-  const findColumnOfTask = (taskId: number): BoardColumn | undefined => {
-    return columns.find((col) => col.tasks?.some((t) => t.id === taskId));
-  };
-
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const task = active.data.current?.task as Task | undefined;
     if (task) {
       setActiveTask(task);
+    } else {
+      const activeId = Number(active.id);
+      for (const col of columnsRef.current) {
+        const found = col.tasks?.find((t) => t.id === activeId);
+        if (found) {
+          setActiveTask(found);
+          break;
+        }
+      }
     }
   };
 
@@ -78,44 +86,46 @@ export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps)
     const { active, over } = event;
     if (!over) return;
 
-    const activeId = active.id as number;
-    const overId = over.id as number;
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
 
-    const sourceCol = findColumnOfTask(activeId);
-    let targetCol = columns.find((c) => c.id === overId);
+    if (activeId === overId) return;
 
+    const currentCols = columnsRef.current;
+    const sourceCol = currentCols.find((col) => col.tasks?.some((t) => t.id === activeId));
+    let targetCol = currentCols.find((col) => col.id === overId);
     if (!targetCol) {
-      targetCol = findColumnOfTask(overId);
+      targetCol = currentCols.find((col) => col.tasks?.some((t) => t.id === overId));
     }
 
     if (!sourceCol || !targetCol || sourceCol.id === targetCol.id) {
       return;
     }
 
-    // Move task between columns in local state
-    setColumns((prev) => {
-      const sourceTasks = [...(sourceCol.tasks || [])];
-      const targetTasks = [...(targetCol.tasks || [])];
+    const sourceTasks = [...(sourceCol.tasks || [])];
+    const targetTasks = [...(targetCol.tasks || [])];
 
-      const activeTaskIndex = sourceTasks.findIndex((t) => t.id === activeId);
-      if (activeTaskIndex === -1) return prev;
+    const activeTaskIndex = sourceTasks.findIndex((t) => t.id === activeId);
+    if (activeTaskIndex === -1) return;
 
-      const [movedTask] = sourceTasks.splice(activeTaskIndex, 1);
-      const updatedMovedTask = { ...movedTask, columnId: targetCol.id };
+    const [movedTask] = sourceTasks.splice(activeTaskIndex, 1);
+    const updatedMovedTask = { ...movedTask, columnId: targetCol.id };
 
-      const overTaskIndex = targetTasks.findIndex((t) => t.id === overId);
-      if (overTaskIndex >= 0) {
-        targetTasks.splice(overTaskIndex, 0, updatedMovedTask);
-      } else {
-        targetTasks.push(updatedMovedTask);
-      }
+    const overTaskIndex = targetTasks.findIndex((t) => t.id === overId);
+    if (overTaskIndex >= 0) {
+      targetTasks.splice(overTaskIndex, 0, updatedMovedTask);
+    } else {
+      targetTasks.push(updatedMovedTask);
+    }
 
-      return prev.map((col) => {
-        if (col.id === sourceCol.id) return { ...col, tasks: sourceTasks };
-        if (col.id === targetCol.id) return { ...col, tasks: targetTasks };
-        return col;
-      });
+    const nextCols = currentCols.map((col) => {
+      if (col.id === sourceCol.id) return { ...col, tasks: sourceTasks };
+      if (col.id === targetCol.id) return { ...col, tasks: targetTasks };
+      return col;
     });
+
+    columnsRef.current = nextCols;
+    setColumns(nextCols);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -124,10 +134,11 @@ export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps)
 
     if (!over) return;
 
-    const activeId = active.id as number;
-    const overId = over.id as number;
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
 
-    const currentColumn = findColumnOfTask(activeId);
+    const currentCols = columnsRef.current;
+    const currentColumn = currentCols.find((col) => col.tasks?.some((t) => t.id === activeId));
     if (!currentColumn) return;
 
     const currentTasks = currentColumn.tasks || [];
@@ -140,9 +151,11 @@ export function KanbanBoard({ board, onTaskClick, onAddTask }: KanbanBoardProps)
 
     if (oldIndex !== newIndex && oldIndex >= 0 && newIndex >= 0) {
       const reorderedTasks = arrayMove(currentTasks, oldIndex, newIndex);
-      setColumns((prev) =>
-        prev.map((c) => (c.id === currentColumn.id ? { ...c, tasks: reorderedTasks } : c))
+      const nextCols = currentCols.map((c) =>
+        c.id === currentColumn.id ? { ...c, tasks: reorderedTasks } : c
       );
+      columnsRef.current = nextCols;
+      setColumns(nextCols);
     }
 
     // Calculate 1-indexed position

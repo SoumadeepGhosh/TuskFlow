@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BoardColumn } from '@/types/board';
@@ -42,7 +42,7 @@ export function KanbanColumn({
     },
   });
 
-  const taskIds = tasks.map((t) => t.id);
+  const taskIds = useMemo(() => (tasks || []).map((t) => t.id), [tasks]);
 
   const handleSaveName = () => {
     if (columnName.trim() && columnName !== column.name) {

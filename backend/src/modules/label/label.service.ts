@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { LabelRepository } from './repositories/label.repository';
-import { CreateLabelDto, LabelQueryDto, UpdateLabelDto } from './dto/request.dto';
+import {
+  CreateLabelDto,
+  LabelQueryDto,
+  UpdateLabelDto,
+} from './dto/request.dto';
 
 @Injectable()
 export class LabelService {

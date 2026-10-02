@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useWorkspaces } from '@/features/workspace/hooks/use-workspaces';
 import { CreateWorkspaceDialog } from '@/features/workspace/components/create-workspace-dialog';
+import { Workspace } from '@/types/workspace';
 import { Button } from '@/components/ui/button';
 import {
   Bell,
@@ -32,7 +33,10 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
   const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const workspaces = workspacesData?.items ?? [];
+  const rawData = workspacesData as unknown;
+  const workspaces: Workspace[] = Array.isArray(rawData)
+    ? (rawData as Workspace[])
+    : (workspacesData?.items ?? []);
   const activeWorkspace = workspaces[0];
 
   const navItems = [

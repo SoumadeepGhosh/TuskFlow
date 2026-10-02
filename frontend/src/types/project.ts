@@ -29,6 +29,10 @@ export interface ProjectTaskStatistics {
     HIGH: number;
     URGENT: number;
   };
+  todo: number;
+  inProgress: number;
+  inReview: number;
+  done: number;
 }
 
 export interface Project {
@@ -53,8 +57,13 @@ export interface Project {
 export interface CreateProjectDto {
   workspaceId: number;
   name: string;
+  key?: string;
   description?: string;
+  icon?: string;
   color?: string;
+  status?: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface UpdateProjectDto {

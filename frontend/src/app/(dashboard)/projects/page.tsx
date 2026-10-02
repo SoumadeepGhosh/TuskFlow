@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useProjects } from '@/features/project/hooks/use-projects';
 import { useWorkspaces } from '@/features/workspace/hooks/use-workspaces';
+import { Project } from '@/types/project';
+import { Workspace } from '@/types/workspace';
 import { ProjectCard } from '@/features/project/components/project-card';
 import { CreateProjectDialog } from '@/features/project/components/create-project-dialog';
 import { PageHeader } from '@/components/ui/page-header';
@@ -18,7 +20,10 @@ export default function ProjectsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const { data: workspacesData } = useWorkspaces({ limit: 50 });
-  const workspaces = workspacesData?.items ?? [];
+  const rawWorkspaces = workspacesData as unknown;
+  const workspaces: Workspace[] = Array.isArray(rawWorkspaces)
+    ? (rawWorkspaces as Workspace[])
+    : (workspacesData?.items ?? []);
 
   const { data, isLoading, isError, refetch } = useProjects({
     workspaceId: selectedWorkspaceId,
@@ -26,8 +31,20 @@ export default function ProjectsPage() {
     limit: 9,
   });
 
-  const projects = data?.items ?? [];
-  const meta = data?.meta;
+  const rawProjects = data as unknown;
+  const projects: Project[] = Array.isArray(rawProjects)
+    ? (rawProjects as Project[])
+    : (data?.items ?? []);
+  const meta = Array.isArray(rawProjects)
+    ? {
+        total: rawProjects.length,
+        page: 1,
+        limit: rawProjects.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      }
+    : data?.meta;
 
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||

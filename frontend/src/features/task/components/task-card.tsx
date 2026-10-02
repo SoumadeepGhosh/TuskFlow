@@ -24,6 +24,7 @@ export function TaskCard({ task, onClick, isOverlay = false }: TaskCardProps) {
     isDragging,
   } = useSortable({
     id: task.id,
+    disabled: isOverlay,
     data: {
       type: 'Task',
       task,
