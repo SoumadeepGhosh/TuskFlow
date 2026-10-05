@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createProjectSchema,
@@ -44,9 +44,13 @@ export function CreateProjectDialog({
 }: CreateProjectDialogProps) {
   const { data: workspacesData } = useWorkspaces({ limit: 50 });
   const rawWorkspaces = workspacesData as unknown;
-  const workspaces: Workspace[] = Array.isArray(rawWorkspaces)
-    ? (rawWorkspaces as Workspace[])
-    : (workspacesData?.items ?? []);
+  const workspaces: Workspace[] = useMemo(
+    () =>
+      Array.isArray(rawWorkspaces)
+        ? (rawWorkspaces as Workspace[])
+        : (workspacesData?.items ?? []),
+    [rawWorkspaces, workspacesData?.items]
+  );
 
   const { mutate: createProject, isPending } = useCreateProjectMutation();
 
@@ -54,7 +58,7 @@ export function CreateProjectDialog({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<CreateProjectFormData>({
@@ -67,7 +71,8 @@ export function CreateProjectDialog({
     },
   });
 
-  const selectedColor = watch('color') || '#5B5CEB';
+  const watchedColor = useWatch({ control, name: 'color' });
+  const selectedColor = watchedColor || '#5B5CEB';
 
   React.useEffect(() => {
     if (defaultWorkspaceId) {

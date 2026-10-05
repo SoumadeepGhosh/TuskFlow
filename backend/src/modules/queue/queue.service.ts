@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 
@@ -14,7 +19,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     const host = this.configService.get<string>('redis.host', 'localhost');
     const port = this.configService.get<number>('redis.port', 6379);
-    const password = this.configService.get<string | undefined>('redis.password');
+    const password = this.configService.get<string | undefined>(
+      'redis.password',
+    );
 
     this.notificationsQueue = new Queue(NOTIFICATIONS_QUEUE, {
       connection: {
@@ -38,10 +45,15 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
         removeOnComplete: true,
       });
 
-      this.logger.log(`Added job ${job.id} (${name}) to ${NOTIFICATIONS_QUEUE}`);
+      this.logger.log(
+        `Added job ${job.id} (${name}) to ${NOTIFICATIONS_QUEUE}`,
+      );
       return job;
     } catch (error) {
-      this.logger.error(`Failed to add job (${name}) to ${NOTIFICATIONS_QUEUE}`, error);
+      this.logger.error(
+        `Failed to add job (${name}) to ${NOTIFICATIONS_QUEUE}`,
+        error,
+      );
       throw error;
     }
   }

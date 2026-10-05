@@ -55,10 +55,7 @@ export class TaskService {
     });
   }
 
-  async findAll(
-    columnId: number | undefined,
-    pagination: TaskPaginationDto,
-  ) {
+  async findAll(columnId: number | undefined, pagination: TaskPaginationDto) {
     const targetColumnId = columnId ?? pagination.columnId;
 
     if (targetColumnId) {

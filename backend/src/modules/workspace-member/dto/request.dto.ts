@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { ApiProperty } from '@nestjs/swagger';
 import { MemberStatus, WorkspaceRole } from '@prisma/client';
 import { IsEmail, IsEnum } from 'class-validator';

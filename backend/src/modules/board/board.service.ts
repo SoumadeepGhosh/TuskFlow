@@ -43,10 +43,7 @@ export class BoardService {
     });
   }
 
-  async findAll(
-    projectId: number | undefined,
-    pagination: BoardPaginationDto,
-  ) {
+  async findAll(projectId: number | undefined, pagination: BoardPaginationDto) {
     const targetProjectId = projectId ?? pagination.projectId;
 
     if (targetProjectId) {

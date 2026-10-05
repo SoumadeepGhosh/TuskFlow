@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import {
   Body,
@@ -37,10 +35,7 @@ export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @Post('boards')
-  createDirect(
-    @Body() dto: CreateBoardDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  createDirect(@Body() dto: CreateBoardDto, @CurrentUser() user: JwtPayload) {
     return this.boardService.create(dto.projectId, dto, user);
   }
 
@@ -61,11 +56,14 @@ export class BoardController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.boardService.findAll(projectId ? Number(projectId) : undefined, {
-      page: Number(page) || 1,
-      limit: Number(limit) || 10,
-      projectId: projectId ? Number(projectId) : undefined,
-    } as BoardPaginationDto);
+    return this.boardService.findAll(
+      projectId ? Number(projectId) : undefined,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        projectId: projectId ? Number(projectId) : undefined,
+      } as BoardPaginationDto,
+    );
   }
 
   @ApiPagination()

@@ -55,7 +55,8 @@ async function bootstrap() {
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'Authorization',
-        description: 'Enter your access token here (e.g. paste the token or Bearer <token>)',
+        description:
+          'Enter your access token here (e.g. paste the token or Bearer <token>)',
         in: 'header',
       },
       'access-token',
@@ -73,4 +74,4 @@ async function bootstrap() {
   console.log(`📚 Swagger: http://localhost:${port}/${apiPrefix}/docs`);
 }
 
-bootstrap();
+void bootstrap();

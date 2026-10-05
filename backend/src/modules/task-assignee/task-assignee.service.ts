@@ -95,7 +95,8 @@ export class TaskAssigneeService {
       throw new NotFoundException('User not found');
     }
 
-    const assignments = await this.taskAssigneeRepository.findTasksForUser(userId);
+    const assignments =
+      await this.taskAssigneeRepository.findTasksForUser(userId);
     return assignments.map((a) => a.task);
   }
 }

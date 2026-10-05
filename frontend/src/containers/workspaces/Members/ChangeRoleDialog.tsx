@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { WorkspaceMember, WorkspaceRole } from '@/types/workspace';
 import { useUpdateMemberRole } from '@/hooks/api/use-workspaces';
 import {
@@ -19,24 +19,18 @@ interface ChangeRoleDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function ChangeRoleDialog({
-  workspaceId,
-  member,
-  open,
-  onOpenChange,
-}: ChangeRoleDialogProps) {
-  const [role, setRole] = useState<WorkspaceRole>('MEMBER');
-  const updateRoleMutation = useUpdateMemberRole();
+interface ChangeRoleFormProps {
+  workspaceId: number;
+  member: WorkspaceMember;
+  onClose: () => void;
+}
 
-  useEffect(() => {
-    if (member) {
-      setRole(member.role);
-    }
-  }, [member, open]);
+function ChangeRoleForm({ workspaceId, member, onClose }: ChangeRoleFormProps) {
+  const [role, setRole] = useState<WorkspaceRole>(member.role);
+  const updateRoleMutation = useUpdateMemberRole();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!member) return;
 
     updateRoleMutation.mutate(
       {
@@ -46,12 +40,53 @@ export function ChangeRoleDialog({
       },
       {
         onSuccess: () => {
-          onOpenChange(false);
+          onClose();
         },
       }
     );
   };
 
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Role
+        </label>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as WorkspaceRole)}
+          disabled={updateRoleMutation.isPending}
+          className="w-full h-11 px-3.5 rounded-[14px] border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <option value="MEMBER">Member (Can create & view tasks)</option>
+          <option value="ADMIN">Admin (Can manage projects & invite)</option>
+          <option value="OWNER">Owner (Full workspace access)</option>
+        </select>
+      </div>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={updateRoleMutation.isPending}
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" isLoading={updateRoleMutation.isPending}>
+          Update Role
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+export function ChangeRoleDialog({
+  workspaceId,
+  member,
+  open,
+  onOpenChange,
+}: ChangeRoleDialogProps) {
   if (!member) return null;
 
   return (
@@ -63,37 +98,12 @@ export function ChangeRoleDialog({
         </DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Role
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as WorkspaceRole)}
-            disabled={updateRoleMutation.isPending}
-            className="w-full h-11 px-3.5 rounded-[14px] border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <option value="MEMBER">Member (Can create & view tasks)</option>
-            <option value="ADMIN">Admin (Can manage projects & invite)</option>
-            <option value="OWNER">Owner (Full workspace access)</option>
-          </select>
-        </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={updateRoleMutation.isPending}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" isLoading={updateRoleMutation.isPending}>
-            Update Role
-          </Button>
-        </DialogFooter>
-      </form>
+      <ChangeRoleForm
+        key={`${member.id}-${member.role}`}
+        workspaceId={workspaceId}
+        member={member}
+        onClose={() => onOpenChange(false)}
+      />
     </Dialog>
   );
 }

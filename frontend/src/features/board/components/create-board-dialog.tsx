@@ -25,28 +25,19 @@ export function CreateBoardDialog({
   open,
   onOpenChange,
 }: CreateBoardDialogProps) {
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(
-    initialProjectId || 0
-  );
+  const [userSelectedProjectId, setUserSelectedProjectId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
   const { data: projectsData } = useProjects({ limit: 50 });
-  const projects = projectsData?.items || [];
+  const projects = React.useMemo(() => projectsData?.items || [], [projectsData?.items]);
+
+  const targetProjectId = initialProjectId || userSelectedProjectId || (projects[0]?.id ?? 0);
 
   const { mutate: createBoard, isPending } = useCreateBoardMutation();
 
-  React.useEffect(() => {
-    if (initialProjectId) {
-      setSelectedProjectId(initialProjectId);
-    } else if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0].id);
-    }
-  }, [initialProjectId, projects, selectedProjectId]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetProjectId = initialProjectId || selectedProjectId;
     if (!name.trim() || !targetProjectId) return;
 
     createBoard(
@@ -59,6 +50,7 @@ export function CreateBoardDialog({
         onSuccess: () => {
           setName('');
           setDescription('');
+          setUserSelectedProjectId(null);
           onOpenChange(false);
         },
       },
@@ -81,8 +73,8 @@ export function CreateBoardDialog({
               Project *
             </label>
             <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+              value={targetProjectId}
+              onChange={(e) => setUserSelectedProjectId(Number(e.target.value))}
               disabled={isPending}
               required
               className="w-full h-11 px-3.5 rounded-[14px] border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"

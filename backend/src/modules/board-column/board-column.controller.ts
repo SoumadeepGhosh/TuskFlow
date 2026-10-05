@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import {
   Body,
@@ -61,11 +59,14 @@ export class BoardColumnController {
     @Query('limit')
     limit?: number,
   ) {
-    return this.boardColumnService.findAll(boardId ? Number(boardId) : undefined, {
-      page: Number(page) || 1,
-      limit: Number(limit) || 10,
-      boardId: boardId ? Number(boardId) : undefined,
-    } as BoardColumnPaginationDto);
+    return this.boardColumnService.findAll(
+      boardId ? Number(boardId) : undefined,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        boardId: boardId ? Number(boardId) : undefined,
+      } as BoardColumnPaginationDto,
+    );
   }
 
   @ApiPagination()

@@ -73,7 +73,7 @@ export function useUpdateWorkspaceMutation(id: number) {
   return useMutation({
     mutationFn: (data: UpdateWorkspaceDto) =>
       workspaceService.updateWorkspace(id, data),
-    onSuccess: (updated) => {
+    onSuccess: () => {
       toast.success('Workspace updated successfully');
       void queryClient.invalidateQueries({ queryKey: WORKSPACE_KEYS.detail(id) });
       void queryClient.invalidateQueries({ queryKey: WORKSPACE_KEYS.lists() });

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useDeleteProjectMutation } from '../hooks/use-projects';
-import { CheckSquare, FolderKanban, Kanban, MoreVertical, Trash2, Users } from 'lucide-react';
+import { CheckSquare, Kanban, MoreVertical, Trash2 } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
@@ -21,7 +21,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   const boardCount = project._count?.boards ?? 0;
   const taskCount = project._count?.tasks ?? 0;
-  const memberCount = project._count?.members ?? 0;
 
   const color = project.color || '#5B5CEB';
 

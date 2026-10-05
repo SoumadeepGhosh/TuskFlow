@@ -11,7 +11,7 @@ import {
   useMarkAllNotificationsRead,
   useDeleteNotification,
 } from '@/features/notification/hooks/use-notifications';
-import { Notification, NotificationType } from '@/types/notification';
+import { NotificationType } from '@/types/notification';
 import {
   Bell,
   CheckCheck,

@@ -15,7 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   ArrowLeft,
-  Briefcase,
   ChevronRight,
   FolderKanban,
   Pencil,
@@ -38,7 +37,7 @@ export function WorkspaceDetails({ workspaceId }: WorkspaceDetailsProps) {
   const [showCreateProjectDialog, setShowCreateProjectDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const { data: workspace, isLoading, isError, refetch } = useWorkspace(workspaceId);
+  const { data: workspace, isLoading, isError } = useWorkspace(workspaceId);
   const { data: projectsData, isLoading: isLoadingProjects } = useProjects({
     workspaceId,
     limit: 20,

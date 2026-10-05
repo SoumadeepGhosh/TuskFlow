@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Trash2, UserX, Users } from 'lucide-react';
+import { Trash2, Users } from 'lucide-react';
 
 interface MemberListProps {
   workspaceId: number;
