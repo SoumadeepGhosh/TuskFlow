@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Frontend CI
+      - Backend CI
+    types:
+      - completed
+
+jobs:
+  deploy:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment Placeholder
+        run: |
+          echo "Frontend CI Passed"
+          echo "Backend CI Passed"
+          echo "Ready for Deployment"
