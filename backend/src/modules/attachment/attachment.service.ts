@@ -54,7 +54,9 @@ export class AttachmentService {
       query.limit,
     );
 
-    const total = await this.attachmentRepository.countAttachments(query.taskId);
+    const total = await this.attachmentRepository.countAttachments(
+      query.taskId,
+    );
 
     return {
       items: attachments,

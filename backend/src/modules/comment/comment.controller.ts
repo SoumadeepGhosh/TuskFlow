@@ -15,10 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CommentService } from './comment.service';
-import {
-  CreateCommentDto,
-  UpdateCommentDto,
-} from './dto/request.dto';
+import { CreateCommentDto, UpdateCommentDto } from './dto/request.dto';
 import { ApiPagination } from 'src/common/decorators/api-pagination.decorator';
 
 @ApiTags('Comments')
@@ -29,10 +26,7 @@ export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @Post()
-  create(
-    @Body() dto: CreateCommentDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  create(@Body() dto: CreateCommentDto, @CurrentUser() user: JwtPayload) {
     return this.commentService.create(dto, user);
   }
 

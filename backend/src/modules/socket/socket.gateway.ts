@@ -1,7 +1,4 @@
-import {
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Logger, OnModuleInit } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -33,14 +30,20 @@ export class SocketGateway
 
   handleConnection(client: Socket) {
     try {
-      const rawToken =
-        client.handshake.auth?.token ||
-        (client.handshake.headers?.authorization
+      const authToken =
+        typeof client.handshake.auth?.token === 'string'
+          ? client.handshake.auth.token
+          : null;
+      const headerAuth =
+        typeof client.handshake.headers?.authorization === 'string'
           ? client.handshake.headers.authorization.replace('Bearer ', '')
-          : null);
+          : null;
+      const rawToken = authToken ?? headerAuth;
 
       if (!rawToken) {
-        this.logger.warn(`Socket connection rejected: No token provided (${client.id})`);
+        this.logger.warn(
+          `Socket connection rejected: No token provided (${client.id})`,
+        );
         client.disconnect();
         return;
       }
@@ -48,7 +51,9 @@ export class SocketGateway
       const payload = this.tokenService.verifyToken(rawToken) as JwtPayload;
 
       if (!payload || !payload.sub) {
-        this.logger.warn(`Socket connection rejected: Invalid payload (${client.id})`);
+        this.logger.warn(
+          `Socket connection rejected: Invalid payload (${client.id})`,
+        );
         client.disconnect();
         return;
       }
@@ -57,7 +62,9 @@ export class SocketGateway
       void client.join(userRoom);
       this.logger.log(`Client ${client.id} joined room ${userRoom}`);
     } catch (error) {
-      this.logger.warn(`Socket authentication failed for client ${client.id}: ${(error as Error).message}`);
+      this.logger.warn(
+        `Socket authentication failed for client ${client.id}: ${(error as Error).message}`,
+      );
       client.disconnect();
     }
   }

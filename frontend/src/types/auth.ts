@@ -20,7 +20,7 @@ export interface LoginResponse {
   tokens?: AuthTokens;
 }
 
-export interface RegisterResponse extends User {}
+export type RegisterResponse = User;
 
 export interface RefreshResponse {
   accessToken: string;

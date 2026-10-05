@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Paperclip, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { MessageSquare, Paperclip, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {

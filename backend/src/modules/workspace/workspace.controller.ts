@@ -13,11 +13,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { WorkspaceService } from './workspace.service';
-import {
-  CreateWorkspaceDto,
-  UpdateWorkspaceDto,
-  WorkspacePaginationDto,
-} from './dto/request.dto';
+import { CreateWorkspaceDto, UpdateWorkspaceDto } from './dto/request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';

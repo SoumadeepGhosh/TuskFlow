@@ -21,13 +21,23 @@ export class NotificationDispatcherService {
   async dispatch<T>(payload: DispatchNotificationPayload<T>): Promise<void> {
     try {
       // 1. Deliver in realtime via Socket.IO
-      this.socketService.emitNotification(payload.recipientId, payload.notification);
-      this.logger.log(`Dispatched realtime socket notification to user:${payload.recipientId}`);
+      this.socketService.emitNotification(
+        payload.recipientId,
+        payload.notification,
+      );
+      this.logger.log(
+        `Dispatched realtime socket notification to user:${payload.recipientId}`,
+      );
 
       // 2. Queue email in background if email data provided
       if (payload.emailData) {
-        await this.queueService.addNotificationJob('task-assigned', payload.emailData);
-        this.logger.log(`Enqueued task-assigned email for user:${payload.recipientId}`);
+        await this.queueService.addNotificationJob(
+          'task-assigned',
+          payload.emailData,
+        );
+        this.logger.log(
+          `Enqueued task-assigned email for user:${payload.recipientId}`,
+        );
       }
     } catch (error) {
       this.logger.error(

@@ -6,7 +6,6 @@ import { Workspace } from '@/types/workspace';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Briefcase,
   Calendar,
   ChevronRight,
   FolderKanban,

@@ -15,7 +15,6 @@ import {
   ArrowLeft,
   Plus,
   RefreshCw,
-  FolderKanban,
 } from 'lucide-react';
 
 interface BoardPageProps {

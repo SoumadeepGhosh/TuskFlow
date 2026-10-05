@@ -9,7 +9,9 @@ describe('WorkspaceMemberController', () => {
       controllers: [WorkspaceMemberController],
     }).compile();
 
-    controller = module.get<WorkspaceMemberController>(WorkspaceMemberController);
+    controller = module.get<WorkspaceMemberController>(
+      WorkspaceMemberController,
+    );
   });
 
   it('should be defined', () => {

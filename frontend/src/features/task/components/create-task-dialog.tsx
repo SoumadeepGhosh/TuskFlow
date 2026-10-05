@@ -25,9 +25,9 @@ export function CreateTaskDialog({
 }: CreateTaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [columnId, setColumnId] = useState<number>(
-    defaultColumnId || columns[0]?.id || 0
-  );
+  const [userSelectedColumnId, setUserSelectedColumnId] = useState<number | null>(null);
+  const targetColumnId = userSelectedColumnId ?? (defaultColumnId || columns[0]?.id || 0);
+
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [dueDate, setDueDate] = useState('');
@@ -35,22 +35,13 @@ export function CreateTaskDialog({
 
   const createTaskMutation = useCreateTask(boardId);
 
-  // When defaultColumnId updates, sync columnId
-  React.useEffect(() => {
-    if (defaultColumnId) {
-      setColumnId(defaultColumnId);
-    } else if (columns.length > 0) {
-      setColumnId(columns[0].id);
-    }
-  }, [defaultColumnId, columns]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !columnId) return;
+    if (!title.trim() || !targetColumnId) return;
 
     createTaskMutation.mutate(
       {
-        columnId,
+        columnId: targetColumnId,
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
@@ -63,6 +54,7 @@ export function CreateTaskDialog({
           onOpenChange(false);
           setTitle('');
           setDescription('');
+          setUserSelectedColumnId(null);
           setDueDate('');
           setEstimatedHours('');
         },

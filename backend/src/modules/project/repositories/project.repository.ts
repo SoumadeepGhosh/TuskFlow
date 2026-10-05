@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma/prisma.service';
 import { ProjectStatus } from '@prisma/client';
@@ -70,7 +66,12 @@ export class ProjectRepository {
     });
   }
 
-  async findAll(page: number, limit: number, workspaceId?: number, userId?: number) {
+  async findAll(
+    page: number,
+    limit: number,
+    workspaceId?: number,
+    userId?: number,
+  ) {
     return this.prisma.project.findMany({
       where: {
         deletedAt: null,

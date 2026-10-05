@@ -48,16 +48,6 @@ export default function ProjectDetailPage() {
   const { mutate: updateProject, isPending: isUpdating } = useUpdateProjectMutation(projectId);
   const { mutate: deleteProject, isPending: isDeleting } = useDeleteProjectMutation();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-
-  React.useEffect(() => {
-    if (project) {
-      setName(project.name);
-      setDescription(project.description || '');
-    }
-  }, [project]);
-
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -86,11 +76,6 @@ export default function ProjectDetailPage() {
   }
 
   const boards = boardsData?.items ?? [];
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateProject({ name, description });
-  };
 
   const handleDelete = () => {
     deleteProject(projectId, {
@@ -317,36 +302,12 @@ export default function ProjectDetailPage() {
       {/* Tab: Settings */}
       {activeTab === 'settings' && (
         <div className="max-w-xl space-y-6">
-          <form onSubmit={handleSaveSettings} className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
-                Project Name
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isUpdating}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isUpdating}
-                rows={3}
-                className="w-full p-3 rounded-[14px] border border-input bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
-
-            <Button type="submit" isLoading={isUpdating}>
-              Save Changes
-            </Button>
-          </form>
+          <ProjectSettingsForm
+            key={`${project.id}-${project.name}-${project.description ?? ''}`}
+            project={project}
+            isUpdating={isUpdating}
+            onUpdate={updateProject}
+          />
 
           <div className="pt-6 border-t border-border">
             <h4 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h4>
@@ -384,6 +345,59 @@ export default function ProjectDetailPage() {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+interface ProjectSettingsFormProps {
+  project: Project;
+  isUpdating: boolean;
+  onUpdate: (data: { name: string; description?: string }) => void;
+}
+
+function ProjectSettingsForm({
+  project,
+  isUpdating,
+  onUpdate,
+}: ProjectSettingsFormProps) {
+  const [name, setName] = useState(project.name);
+  const [description, setDescription] = useState(project.description || '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdate({ name, description });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
+          Project Name
+        </label>
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={isUpdating}
+          required
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
+          Description
+        </label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={isUpdating}
+          rows={3}
+          className="w-full p-3 rounded-[14px] border border-input bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
+      <Button type="submit" isLoading={isUpdating}>
+        Save Changes
+      </Button>
+    </form>
   );
 }
 

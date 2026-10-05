@@ -11,15 +11,11 @@ import { Button } from '@/components/ui/button';
 import {
   Bell,
   Briefcase,
-  CheckSquare,
   ChevronDown,
   FolderKanban,
   Kanban,
   LogOut,
   Plus,
-  Settings,
-  Sparkles,
-  Users,
 } from 'lucide-react';
 
 interface SidebarProps {

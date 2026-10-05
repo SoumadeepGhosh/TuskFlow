@@ -52,7 +52,8 @@ export class NotificationService {
         pagination.limit,
       );
 
-    const total = await this.notificationRepository.countUserNotifications(userId);
+    const total =
+      await this.notificationRepository.countUserNotifications(userId);
 
     return {
       items: notifications,

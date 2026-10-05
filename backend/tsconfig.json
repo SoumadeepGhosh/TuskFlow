@@ -14,9 +14,8 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "rootDir": "./src",
     "incremental": true,
-    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
@@ -24,13 +23,11 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "test",
     "generated",
-    "prisma.config.ts",
-    "**/*spec.ts"
+    "prisma.config.ts"
   ]
 }

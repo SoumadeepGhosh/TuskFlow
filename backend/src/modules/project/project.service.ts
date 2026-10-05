@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
 import {
   BadRequestException,
   ConflictException,
@@ -31,7 +28,8 @@ export class ProjectService {
       throw new BadRequestException('workspaceId is required');
     }
 
-    const workspace = await this.projectRepository.findWorkspace(targetWorkspaceId);
+    const workspace =
+      await this.projectRepository.findWorkspace(targetWorkspaceId);
 
     if (!workspace) {
       throw new NotFoundException('Workspace not found');
