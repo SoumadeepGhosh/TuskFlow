@@ -89,8 +89,8 @@ export function CreateTaskDialog({
                 Column
               </label>
               <select
-                value={columnId}
-                onChange={(e) => setColumnId(Number(e.target.value))}
+                value={targetColumnId}
+                onChange={(e) => setUserSelectedColumnId(Number(e.target.value))}
                 className="w-full h-11 px-3 rounded-[14px] border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
                 {columns.map((col) => (

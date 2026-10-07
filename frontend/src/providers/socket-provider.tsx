@@ -1,12 +1,12 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
 import { useAuth } from './auth-provider';
 import { tokenStorage } from '@/lib/tokens';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Notification } from '@/types/notification';
+import type { Notification } from '@/types/notification';
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -27,16 +27,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = tokenStorage.getAccessToken();
     if (!user || !token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
       return;
     }
 
     const socketUrl =
-      process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+      process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
 
     const newSocket = io(socketUrl, {
       auth: {
@@ -48,10 +43,12 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     });
 
     newSocket.on('connect', () => {
+      setSocket(newSocket);
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
+      setSocket(null);
       setIsConnected(false);
     });
 
@@ -65,17 +62,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
 
-    setSocket(newSocket);
-
     return () => {
       newSocket.disconnect();
-      setSocket(null);
-      setIsConnected(false);
     };
-  }, [user]);
+  }, [user, queryClient]);
+
+  const activeSocket = user ? socket : null;
+  const activeIsConnected = user ? isConnected : false;
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider
+      value={{ socket: activeSocket, isConnected: activeIsConnected }}
+    >
       {children}
     </SocketContext.Provider>
   );

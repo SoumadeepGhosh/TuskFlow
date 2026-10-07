@@ -48,8 +48,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refreshProfile();
-  }, [refreshProfile]);
+    let ignore = false;
+
+    const initAuth = async () => {
+      const token = tokenStorage.getAccessToken();
+      if (!token) {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const profile = await authService.getProfile();
+        if (!ignore) {
+          setUser(profile);
+        }
+      } catch {
+        tokenStorage.clearTokens();
+        if (!ignore) {
+          setUser(null);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void initAuth();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const login = useCallback(
     (accessToken: string, refreshToken: string, userData: User) => {

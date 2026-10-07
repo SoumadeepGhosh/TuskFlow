@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useState } from 'react';
+import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
@@ -29,8 +28,6 @@ import { TaskStatus, TaskPriority } from '@/types/task';
 import { useAuth } from '@/providers/auth-provider';
 import {
   Trash2,
-  Calendar,
-  Clock,
   UserPlus,
   Tag,
   Paperclip,
@@ -91,12 +88,14 @@ export function TaskDetailModal({
   const { data: commentsData } = useComments(taskId || 0);
   const { data: attachmentsData } = useAttachments(taskId || 0);
 
-  useEffect(() => {
+  const [prevTask, setPrevTask] = useState(task);
+  if (task !== prevTask) {
+    setPrevTask(task);
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
     }
-  }, [task]);
+  }
 
   if (!open) return null;
 

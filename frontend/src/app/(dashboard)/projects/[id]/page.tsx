@@ -10,6 +10,7 @@ import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
 } from '@/features/project/hooks/use-projects';
+import type { Project } from '@/types/project';
 import { useBoards } from '@/features/board/hooks/use-boards';
 import { CreateBoardDialog } from '@/features/board/components/create-board-dialog';
 import { PageHeader } from '@/components/ui/page-header';
