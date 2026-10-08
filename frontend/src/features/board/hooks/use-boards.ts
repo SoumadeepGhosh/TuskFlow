@@ -55,6 +55,7 @@ export function useCreateBoardMutation() {
     onSuccess: (newBoard) => {
       toast.success(`Board "${newBoard.name}" created!`);
       void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.lists() });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -94,6 +95,7 @@ export function useDeleteBoardMutation() {
     onSuccess: () => {
       toast.success('Board deleted');
       void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.lists() });
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -113,6 +115,7 @@ export function useCreateColumnMutation(boardId: number) {
     onSuccess: () => {
       toast.success('Column added');
       void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.detail(boardId) });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -133,6 +136,7 @@ export function useUpdateColumnMutation(boardId: number) {
     onSuccess: () => {
       toast.success('Column updated');
       void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.detail(boardId) });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -152,6 +156,7 @@ export function useDeleteColumnMutation(boardId: number) {
     onSuccess: () => {
       toast.success('Column deleted');
       void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.detail(boardId) });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =

@@ -71,14 +71,15 @@ export class CreateBoardDto {
   @MaxLength(500)
   description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Board position inside the project',
+    description: 'Board position inside the project (auto-assigned if omitted)',
   })
   @Type(() => Number)
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  position!: number;
+  @Min(0)
+  position?: number;
 }
 
 export class UpdateBoardDto extends PartialType(CreateBoardDto) {}

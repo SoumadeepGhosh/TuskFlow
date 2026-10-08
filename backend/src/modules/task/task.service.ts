@@ -17,7 +17,7 @@ import {
 
 import { TaskRepository } from './repositories/task.repository';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { TaskStatus } from '@prisma/client';
+import { TaskPriority, TaskStatus } from '@prisma/client';
 
 @Injectable()
 export class TaskService {
@@ -40,15 +40,21 @@ export class TaskService {
       throw new NotFoundException('Board column not found');
     }
 
+    let position = dto.position;
+    if (position === undefined || position === null || position < 0) {
+      const maxPos = await this.taskRepository.getMaxPosition(targetColumnId);
+      position = maxPos >= 0 ? maxPos + 1 : 0;
+    }
+
     return this.taskRepository.createTask({
       columnId: targetColumnId,
       projectId: column.board.projectId,
       reporterId: user.sub,
-      title: dto.title,
-      description: dto.description,
-      priority: dto.priority,
-      status: dto.status,
-      position: dto.position,
+      title: dto.title.trim(),
+      description: dto.description?.trim(),
+      priority: dto.priority || TaskPriority.MEDIUM,
+      status: dto.status || TaskStatus.TODO,
+      position,
       startDate: dto.startDate,
       dueDate: dto.dueDate,
       estimatedHours: dto.estimatedHours,

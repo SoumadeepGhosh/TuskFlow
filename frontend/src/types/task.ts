@@ -41,12 +41,20 @@ export interface TaskComment {
 export interface TaskAttachment {
   id: number;
   taskId: number;
-  userId: number;
+  uploadedBy?: number;
+  userId?: number;
   fileName: string;
   fileSize: number;
-  fileType: string;
+  mimeType?: string;
+  fileType?: string;
   fileUrl: string;
   createdAt: string;
+  updatedAt?: string;
+  uploader?: {
+    id: number;
+    name?: string | null;
+    email: string;
+  } | null;
   user?: User;
 }
 

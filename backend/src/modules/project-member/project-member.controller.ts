@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
-
 import {
   Body,
   Controller,
@@ -15,6 +13,8 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import {
   AddProjectMemberDto,
   ProjectMemberPaginationDto,
@@ -34,8 +34,9 @@ export class ProjectMemberController {
   addMember(
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() dto: AddProjectMemberDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.projectMemberService.addMember(projectId, dto);
+    return this.projectMemberService.addMember(projectId, dto, user);
   }
 
   @ApiPagination()
@@ -45,22 +46,27 @@ export class ProjectMemberController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.projectMemberService.findMembers(projectId, {
+    const paginationDto: ProjectMemberPaginationDto = {
       page: Number(page) || 1,
       limit: Number(limit) || 10,
-    } as ProjectMemberPaginationDto);
+    };
+    return this.projectMemberService.findMembers(projectId, paginationDto);
   }
 
   @Patch(':memberId/role')
   updateRole(
     @Param('memberId', ParseIntPipe) memberId: number,
     @Body() dto: UpdateProjectMemberRoleDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.projectMemberService.updateRole(memberId, dto);
+    return this.projectMemberService.updateRole(memberId, dto, user);
   }
 
   @Delete(':memberId')
-  removeMember(@Param('memberId', ParseIntPipe) memberId: number) {
-    return this.projectMemberService.removeMember(memberId);
+  removeMember(
+    @Param('memberId', ParseIntPipe) memberId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectMemberService.removeMember(memberId, user);
   }
 }

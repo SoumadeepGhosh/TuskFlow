@@ -20,12 +20,15 @@ import {
   useCreateComment,
   useDeleteComment,
   useAttachments,
-  useUploadAttachment,
   useDeleteAttachment,
 } from '../hooks/use-tasks';
 import { useProjectMembers } from '@/features/project/hooks/use-projects';
-import { TaskStatus, TaskPriority } from '@/types/task';
+import { TaskStatus, TaskPriority, TaskAttachment } from '@/types/task';
+import { taskService } from '@/services/task.service';
 import { useAuth } from '@/providers/auth-provider';
+import { AttachmentPreviewModal } from './attachment-preview-modal';
+import { AttachmentUploadZone } from './attachment-upload-zone';
+import { toast } from 'sonner';
 import {
   Trash2,
   UserPlus,
@@ -35,7 +38,16 @@ import {
   Send,
   Download,
   X,
-  Plus,
+  Eye,
+  Copy,
+  Check,
+  FileText,
+  Image as ImageIcon,
+  Video,
+  Music,
+  FileCode,
+  FileSpreadsheet,
+  File,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +80,60 @@ export function TaskDetailModal({
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#5B5CEB');
 
+  const [previewAttachment, setPreviewAttachment] = useState<TaskAttachment | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] = useState<number | null>(null);
+  const [copiedAttachmentId, setCopiedAttachmentId] = useState<number | null>(null);
+
+  const getAttachmentCategory = (fileName: string, mimeType?: string) => {
+    const ext = fileName.toLowerCase().split('.').pop() || '';
+    const mime = mimeType?.toLowerCase() || '';
+    if (ext === 'pdf' || mime === 'application/pdf') return 'pdf';
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext) || mime.startsWith('image/')) return 'image';
+    if (['mp4', 'webm', 'mov', 'mkv'].includes(ext) || mime.startsWith('video/')) return 'video';
+    if (['mp3', 'wav', 'ogg'].includes(ext) || mime.startsWith('audio/')) return 'audio';
+    if (['txt', 'json', 'csv', 'xml', 'log', 'md', 'ts', 'js'].includes(ext) || mime.startsWith('text/')) return 'text';
+    if (['docx', 'xlsx', 'pptx', 'doc', 'xls'].includes(ext) || mime.includes('spreadsheet') || mime.includes('wordprocessing')) return 'office';
+    return 'other';
+  };
+
+  const renderAttachmentIcon = (category: string) => {
+    switch (category) {
+      case 'pdf': return <FileText className="w-4 h-4 text-rose-500" />;
+      case 'image': return <ImageIcon className="w-4 h-4 text-sky-500" />;
+      case 'video': return <Video className="w-4 h-4 text-purple-500" />;
+      case 'audio': return <Music className="w-4 h-4 text-emerald-500" />;
+      case 'text': return <FileCode className="w-4 h-4 text-amber-500" />;
+      case 'office': return <FileSpreadsheet className="w-4 h-4 text-teal-500" />;
+      default: return <File className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const handleDownloadAttachment = async (att: TaskAttachment) => {
+    try {
+      await taskService.downloadAttachment(att.id, att.fileName);
+      toast.success(`Downloaded ${att.fileName}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Download failed');
+    }
+  };
+
+  const handleCopyAttachmentLink = (att: TaskAttachment) => {
+    const url = taskService.getAttachmentViewUrl(att.id);
+    navigator.clipboard.writeText(url);
+    setCopiedAttachmentId(att.id);
+    toast.success('Direct link copied to clipboard');
+    setTimeout(() => setCopiedAttachmentId(null), 2000);
+  };
+
   // Mutations
   const updateTaskMutation = useUpdateTask(boardId);
   const deleteTaskMutation = useDeleteTask(boardId);
@@ -78,7 +144,6 @@ export function TaskDetailModal({
   const createLabelMutation = useCreateLabel(projectId || task?.projectId);
   const createCommentMutation = useCreateComment(taskId || 0);
   const deleteCommentMutation = useDeleteComment(taskId || 0);
-  const uploadAttachmentMutation = useUploadAttachment(taskId || 0);
   const deleteAttachmentMutation = useDeleteAttachment(taskId || 0);
 
   // Queries
@@ -121,13 +186,6 @@ export function TaskDetailModal({
     createCommentMutation.mutate(newComment.trim(), {
       onSuccess: () => setNewComment(''),
     });
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && taskId) {
-      uploadAttachmentMutation.mutate(file);
-    }
   };
 
   const handleCreateAndAssignLabel = (e: React.FormEvent) => {
@@ -339,62 +397,112 @@ export function TaskDetailModal({
                 {/* Tab: Attachments */}
                 {activeTab === 'attachments' && (
                   <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          disabled={uploadAttachmentMutation.isPending}
-                        />
-                        <span className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs">
-                          <Plus className="w-3.5 h-3.5" />
-                          {uploadAttachmentMutation.isPending ? 'Uploading...' : 'Upload File'}
-                        </span>
-                      </label>
-                    </div>
+                    {/* Multi-file drag and drop upload zone */}
+                    <AttachmentUploadZone taskId={task.id} />
 
-                    <div className="space-y-2 mt-3">
-                      {attachmentsData?.items?.map((att) => (
-                        <div
-                          key={att.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-secondary/40 border border-border/60 text-xs"
-                        >
-                          <div className="flex items-center gap-2.5 truncate">
-                            <Paperclip className="w-4 h-4 text-primary shrink-0" />
-                            <div className="truncate">
-                              <p className="font-medium text-foreground truncate">
-                                {att.fileName}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {(att.fileSize / 1024).toFixed(1)} KB • {new Date(att.createdAt).toLocaleDateString()}
-                              </p>
+                    {/* Attachments List */}
+                    <div className="space-y-2 mt-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Uploaded Attachments ({attachmentsData?.items?.length || 0})
+                        </h4>
+                      </div>
+
+                      {attachmentsData?.items?.map((att) => {
+                        const cat = getAttachmentCategory(att.fileName, att.mimeType);
+                        return (
+                          <div
+                            key={att.id}
+                            className="group flex items-center justify-between p-3 rounded-2xl bg-secondary/30 hover:bg-secondary/60 border border-border/60 hover:border-primary/30 transition-all text-xs"
+                          >
+                            <div
+                              onClick={() => {
+                                setPreviewAttachment(att);
+                                setIsPreviewOpen(true);
+                              }}
+                              className="flex items-center gap-3 min-w-0 truncate cursor-pointer flex-1 mr-2"
+                              title="Click to preview file"
+                            >
+                              <div className="w-9 h-9 rounded-xl bg-background border border-border flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                                {renderAttachmentIcon(cat)}
+                              </div>
+                              <div className="truncate min-w-0">
+                                <p className="font-semibold text-foreground truncate group-hover:text-primary transition-colors flex items-center gap-1.5">
+                                  <span>{att.fileName}</span>
+                                  <span className="text-[9px] uppercase px-1.5 py-0.5 rounded font-bold bg-secondary text-muted-foreground border border-border/50">
+                                    {cat}
+                                  </span>
+                                </p>
+                                <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                  {formatFileSize(att.fileSize)} •{' '}
+                                  {att.uploader?.name || att.uploader?.email || 'Uploaded'} •{' '}
+                                  {new Date(att.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Actions Toolbar */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setPreviewAttachment(att);
+                                  setIsPreviewOpen(true);
+                                }}
+                                className="h-8 px-2.5 rounded-lg text-xs gap-1 font-medium hover:bg-background"
+                                title="Preview file"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-primary" />
+                                <span className="hidden sm:inline">Preview</span>
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadAttachment(att)}
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-background text-muted-foreground hover:text-foreground"
+                                title="Download attachment"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyAttachmentLink(att)}
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-background text-muted-foreground hover:text-foreground"
+                                title="Copy direct link"
+                              >
+                                {copiedAttachmentId === att.id ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAttachmentToDelete(att.id)}
+                                className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                title="Delete attachment"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <a
-                              href={att.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
-                            <button
-                              onClick={() => deleteAttachmentMutation.mutate(att.id)}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       {(!attachmentsData?.items || attachmentsData.items.length === 0) && (
-                        <p className="text-center py-6 text-xs text-muted-foreground">
-                          No attachments uploaded yet.
-                        </p>
+                        <div className="text-center py-8 px-4 rounded-2xl border border-dashed border-border/60 bg-secondary/10">
+                          <Paperclip className="w-6 h-6 mx-auto text-muted-foreground/60 mb-2" />
+                          <p className="text-xs font-medium text-foreground">No attachments yet</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Drag & drop or upload files above to share documents with your team
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -657,6 +765,32 @@ export function TaskDetailModal({
             });
           }
         }}
+      />
+
+      {/* Delete Attachment Confirmation */}
+      <ConfirmDialog
+        open={Boolean(attachmentToDelete)}
+        onOpenChange={(open) => !open && setAttachmentToDelete(null)}
+        title="Delete Attachment"
+        description="Are you sure you want to delete this attachment? This action cannot be undone."
+        confirmText="Delete Attachment"
+        variant="destructive"
+        onConfirm={() => {
+          if (attachmentToDelete) {
+            deleteAttachmentMutation.mutate(attachmentToDelete, {
+              onSuccess: () => setAttachmentToDelete(null),
+            });
+          }
+        }}
+      />
+
+      {/* Enterprise Attachment Preview Modal */}
+      <AttachmentPreviewModal
+        attachment={previewAttachment}
+        allAttachments={attachmentsData?.items || []}
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        onSelectAttachment={(att) => setPreviewAttachment(att)}
       />
     </Dialog>
   );

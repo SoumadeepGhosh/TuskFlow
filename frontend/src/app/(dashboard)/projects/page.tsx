@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useProjects } from '@/features/project/hooks/use-projects';
 import { useWorkspaces } from '@/features/workspace/hooks/use-workspaces';
-import { Project } from '@/types/project';
+import { Project, ProjectStatus } from '@/types/project';
 import { Workspace } from '@/types/workspace';
 import { ProjectCard } from '@/features/project/components/project-card';
 import { CreateProjectDialog } from '@/features/project/components/create-project-dialog';
@@ -11,11 +11,19 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ChevronLeft, ChevronRight, FolderKanban, Plus, Search } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  Plus,
+  Search,
+  X,
+} from 'lucide-react';
 
 export default function ProjectsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | ProjectStatus>('ACTIVE');
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | undefined>(undefined);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -27,6 +35,7 @@ export default function ProjectsPage() {
 
   const { data, isLoading, isError, refetch } = useProjects({
     workspaceId: selectedWorkspaceId,
+    status: statusFilter === 'ALL' ? undefined : statusFilter,
     page,
     limit: 9,
   });
@@ -48,6 +57,7 @@ export default function ProjectsPage() {
 
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.key && p.key.toLowerCase().includes(search.toLowerCase())) ||
     (p.description && p.description.toLowerCase().includes(search.toLowerCase())),
   );
 
@@ -66,42 +76,95 @@ export default function ProjectsPage() {
       />
 
       {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search projects..."
-              className="w-full h-10 pl-10 pr-4 rounded-[14px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search projects by name or key..."
+                className="w-full h-10 pl-10 pr-9 rounded-[14px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Workspace Filter */}
+            <select
+              value={selectedWorkspaceId ?? ''}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : undefined;
+                setSelectedWorkspaceId(val);
+                setPage(1);
+              }}
+              className="w-full sm:w-56 h-10 rounded-[14px] border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">All Workspaces</option>
+              {workspaces.map((ws) => (
+                <option key={ws.id} value={ws.id}>
+                  {ws.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Workspace Filter */}
-          <select
-            value={selectedWorkspaceId ?? ''}
-            onChange={(e) => {
-              const val = e.target.value ? Number(e.target.value) : undefined;
-              setSelectedWorkspaceId(val);
-              setPage(1);
-            }}
-            className="w-full sm:w-56 h-10 rounded-[14px] border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">All Workspaces</option>
-            {workspaces.map((ws) => (
-              <option key={ws.id} value={ws.id}>
-                {ws.name}
-              </option>
-            ))}
-          </select>
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 bg-secondary/60 p-1 rounded-xl self-start sm:self-auto border border-border/50">
+            <button
+              onClick={() => {
+                setStatusFilter('ACTIVE');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                statusFilter === 'ACTIVE'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('ARCHIVED');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                statusFilter === 'ARCHIVED'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Archived
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('ALL');
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                statusFilter === 'ALL'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All
+            </button>
+          </div>
         </div>
 
         {meta && meta.total > 0 && (
-          <p className="text-xs text-muted-foreground self-start sm:self-auto">
-            Showing {filteredProjects.length} of {meta.total} projects
+          <p className="text-xs text-muted-foreground">
+            Showing {filteredProjects.length} of {meta.total} {statusFilter.toLowerCase()} projects
           </p>
         )}
       </div>
@@ -141,14 +204,22 @@ export default function ProjectsPage() {
       ) : filteredProjects.length === 0 ? (
         <EmptyState
           icon={<FolderKanban className="h-6 w-6" />}
-          title={search ? 'No matching projects' : 'No projects created yet'}
+          title={
+            search
+              ? 'No matching projects'
+              : statusFilter === 'ARCHIVED'
+              ? 'No archived projects'
+              : 'No projects created yet'
+          }
           description={
             search
               ? `No projects found matching "${search}".`
-              : 'Create a project to start setting up boards and tasks.'
+              : statusFilter === 'ARCHIVED'
+              ? 'Completed or inactive projects that are archived will appear here.'
+              : 'Create a project to start setting up Kanban boards and tasks.'
           }
-          actionLabel={search ? undefined : 'Create Project'}
-          onAction={search ? undefined : () => setShowCreateDialog(true)}
+          actionLabel={search || statusFilter === 'ARCHIVED' ? undefined : 'Create Project'}
+          onAction={search || statusFilter === 'ARCHIVED' ? undefined : () => setShowCreateDialog(true)}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -198,4 +269,3 @@ export default function ProjectsPage() {
     </div>
   );
 }
-

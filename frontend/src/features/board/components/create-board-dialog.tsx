@@ -10,6 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -29,10 +36,11 @@ export function CreateBoardDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
-  const { data: projectsData } = useProjects({ limit: 50 });
+  const { data: projectsData, isLoading: isLoadingProjects } = useProjects({ limit: 50 });
   const projects = React.useMemo(() => projectsData?.items || [], [projectsData?.items]);
 
   const targetProjectId = initialProjectId || userSelectedProjectId || (projects[0]?.id ?? 0);
+  const selectedProject = projects.find((p) => p.id === targetProjectId);
 
   const { mutate: createBoard, isPending } = useCreateBoardMutation();
 
@@ -72,19 +80,34 @@ export function CreateBoardDialog({
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Project *
             </label>
-            <select
-              value={targetProjectId}
-              onChange={(e) => setUserSelectedProjectId(Number(e.target.value))}
-              disabled={isPending}
-              required
-              className="w-full h-11 px-3.5 rounded-[14px] border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            {isLoadingProjects ? (
+              <div className="h-11 rounded-[14px] border border-border bg-card/60 flex items-center px-3.5 text-xs text-muted-foreground animate-pulse">
+                Loading projects...
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="h-11 rounded-[14px] border border-destructive/20 bg-destructive/5 flex items-center px-3.5 text-xs text-destructive">
+                No active projects found. Please create a project first.
+              </div>
+            ) : (
+              <Select
+                value={targetProjectId ? String(targetProjectId) : ''}
+                onValueChange={(val) => setUserSelectedProjectId(Number(val))}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project">
+                    {selectedProject ? selectedProject.name : 'Select a project'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name} {p.key ? `(${p.key})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         )}
 
@@ -111,7 +134,7 @@ export function CreateBoardDialog({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What tasks belong on this board?"
             disabled={isPending}
-            className="w-full rounded-[14px] border border-border bg-card px-3.5 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="w-full rounded-[14px] border border-border bg-card px-3.5 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
@@ -124,7 +147,10 @@ export function CreateBoardDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button
+            type="submit"
+            disabled={isPending || (!initialProjectId && projects.length === 0)}
+          >
             {isPending ? (
               <span className="flex items-center gap-2">
                 <Spinner size="sm" className="text-white" />
@@ -139,4 +165,3 @@ export function CreateBoardDialog({
     </Dialog>
   );
 }
-

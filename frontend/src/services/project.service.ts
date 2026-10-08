@@ -5,6 +5,7 @@ import {
   Project,
   ProjectMember,
   ProjectRole,
+  ProjectStatus,
   ProjectTaskStatistics,
   UpdateProjectDto,
 } from '@/types/project';
@@ -13,6 +14,7 @@ import { PaginatedResponse } from '@/types/api';
 export const projectService = {
   async getProjects(params?: {
     workspaceId?: number;
+    status?: ProjectStatus;
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<Project>> {

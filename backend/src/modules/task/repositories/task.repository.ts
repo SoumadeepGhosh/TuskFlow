@@ -36,6 +36,19 @@ export class TaskRepository {
     });
   }
 
+  async getMaxPosition(columnId: number): Promise<number> {
+    const aggregate = await this.prisma.task.aggregate({
+      where: {
+        columnId,
+        deletedAt: null,
+      },
+      _max: {
+        position: true,
+      },
+    });
+    return aggregate._max.position ?? -1;
+  }
+
   findTasks(columnId?: number, page = 1, limit = 10, projectId?: number) {
     return this.prisma.task.findMany({
       where: {

@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BoardColumn } from '@/types/board';
@@ -35,6 +48,8 @@ export function CreateTaskDialog({
 
   const createTaskMutation = useCreateTask(boardId);
 
+  const selectedColumn = columns.find((c) => c.id === targetColumnId);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !targetColumnId) return;
@@ -58,15 +73,18 @@ export function CreateTaskDialog({
           setDueDate('');
           setEstimatedHours('');
         },
-      }
+      },
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <form onSubmit={handleSubmit} className="p-6">
-        <DialogHeader>
+        <DialogHeader onClose={() => onOpenChange(false)}>
           <DialogTitle>Create Task</DialogTitle>
+          <DialogDescription>
+            Add a new task to your Kanban pipeline.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -78,6 +96,7 @@ export function CreateTaskDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Design authentication workflow"
+              disabled={createTaskMutation.isPending}
               autoFocus
               required
             />
@@ -86,35 +105,49 @@ export function CreateTaskDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                Column
+                Column *
               </label>
-              <select
-                value={targetColumnId}
-                onChange={(e) => setUserSelectedColumnId(Number(e.target.value))}
-                className="w-full h-11 px-3 rounded-[14px] border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              <Select
+                value={String(targetColumnId)}
+                onValueChange={(val) => setUserSelectedColumnId(Number(val))}
+                disabled={createTaskMutation.isPending}
               >
-                {columns.map((col) => (
-                  <option key={col.id} value={col.id}>
-                    {col.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select column">
+                    {selectedColumn ? selectedColumn.name : 'Select column'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {columns.map((col) => (
+                    <SelectItem key={col.id} value={String(col.id)}>
+                      {col.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
                 Priority
               </label>
-              <select
+              <Select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full h-11 px-3 rounded-[14px] border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                onValueChange={(val) => setPriority(val as TaskPriority)}
+                disabled={createTaskMutation.isPending}
               >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="URGENT">Urgent</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Priority">
+                    {priority}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="URGENT">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -123,16 +156,29 @@ export function CreateTaskDialog({
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
                 Status
               </label>
-              <select
+              <Select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full h-11 px-3 rounded-[14px] border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                onValueChange={(val) => setStatus(val as TaskStatus)}
+                disabled={createTaskMutation.isPending}
               >
-                <option value="TODO">To Do</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="IN_REVIEW">In Review</option>
-                <option value="DONE">Done</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status">
+                    {status === 'TODO'
+                      ? 'To Do'
+                      : status === 'IN_PROGRESS'
+                      ? 'In Progress'
+                      : status === 'IN_REVIEW'
+                      ? 'In Review'
+                      : 'Done'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODO">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                  <SelectItem value="DONE">Done</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -143,6 +189,7 @@ export function CreateTaskDialog({
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                disabled={createTaskMutation.isPending}
               />
             </div>
           </div>
@@ -156,7 +203,8 @@ export function CreateTaskDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details, criteria, or context for this task..."
               rows={3}
-              className="w-full p-3 rounded-[14px] border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+              disabled={createTaskMutation.isPending}
+              className="w-full p-3 rounded-[14px] border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none disabled:opacity-50"
             />
           </div>
         </div>
@@ -165,6 +213,7 @@ export function CreateTaskDialog({
           <Button
             type="button"
             variant="ghost"
+            disabled={createTaskMutation.isPending}
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -177,4 +226,3 @@ export function CreateTaskDialog({
     </Dialog>
   );
 }
-

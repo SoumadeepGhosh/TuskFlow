@@ -44,6 +44,14 @@ export class ProjectPaginationDto {
   @IsInt()
   @Min(1)
   workspaceId?: number;
+
+  @ApiPropertyOptional({
+    enum: ProjectStatus,
+    description: 'Filter by project status (ACTIVE or ARCHIVED)',
+  })
+  @IsOptional()
+  @IsEnum(ProjectStatus)
+  status?: ProjectStatus;
 }
 
 export class CreateProjectDto {

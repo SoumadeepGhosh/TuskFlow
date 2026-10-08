@@ -9,9 +9,7 @@ import { TaskDetailModal } from '@/features/task/components/task-detail-modal';
 import { Task } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Kanban,
   ArrowLeft,
   Plus,
   RefreshCw,
@@ -28,6 +26,7 @@ export default function BoardPage({ params }: BoardPageProps) {
   const { data: board, isLoading, error, refetch } = useBoard(boardId);
 
   // Modal states
+  const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [selectedColumnId, setSelectedColumnId] = useState<number | undefined>();
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
@@ -106,35 +105,41 @@ export default function BoardPage({ params }: BoardPageProps) {
           </div>
         </div>
 
-        {columns.length > 0 && (
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            onClick={() => setIsAddColumnOpen(true)}
+            className="gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Add Column
+          </Button>
+
           <Button
             onClick={() => {
-              setSelectedColumnId(columns[0].id);
-              setIsCreateTaskOpen(true);
+              if (columns.length === 0) {
+                setIsAddColumnOpen(true);
+              } else {
+                setSelectedColumnId(columns[0].id);
+                setIsCreateTaskOpen(true);
+              }
             }}
+            className="gap-1.5"
           >
-            <Plus className="w-4 h-4 mr-2" /> New Task
+            <Plus className="w-4 h-4" /> New Task
           </Button>
-        )}
+        </div>
       </div>
 
-      {/* Main Board Area */}
+      {/* Main Board Area - Always rendered so canvas and column cards are directly interactive */}
       <div className="flex-1 overflow-hidden">
-        {columns.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <EmptyState
-              icon={Kanban}
-              title="No columns on this board"
-              description="Create your first column like 'To Do' or 'Backlog' to start tracking tasks."
-            />
-          </div>
-        ) : (
-          <KanbanBoard
-            board={board}
-            onTaskClick={handleTaskClick}
-            onAddTask={handleAddTask}
-          />
-        )}
+        <KanbanBoard
+          board={board}
+          onTaskClick={handleTaskClick}
+          onAddTask={handleAddTask}
+          isAddColumnOpen={isAddColumnOpen}
+          onOpenAddColumnChange={setIsAddColumnOpen}
+        />
       </div>
 
       {/* Create Task Dialog */}
@@ -157,4 +162,3 @@ export default function BoardPage({ params }: BoardPageProps) {
     </div>
   );
 }
-

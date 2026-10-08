@@ -6,9 +6,18 @@ import { validate } from './config';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './database/prisma/prisma.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
+import * as fs from 'fs';
 import { PasswordModule } from './common/password/password.module';
 import { TokenModule } from './common/token/token.module';
 import { StorageModule } from './common/storage/storage.module';
+
+const getUploadPath = () => {
+  const backendUploads = path.resolve(process.cwd(), 'backend', 'uploads');
+  if (fs.existsSync(backendUploads)) return backendUploads;
+  return path.resolve(process.cwd(), 'uploads');
+};
 import { QueueModule } from './modules/queue/queue.module';
 import { EmailModule } from './modules/email/email.module';
 import { SocketModule } from './modules/socket/socket.module';
@@ -17,6 +26,7 @@ import { NotificationQueueModule } from './modules/notification-queue/notificati
 import { NotificationModule } from './modules/notification/notification.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { WorkspaceMemberModule } from './modules/workspace-member/workspace-member.module';
+import { WorkspaceInvitationModule } from './modules/workspace-invitation/workspace-invitation.module';
 import { ProjectModule } from './modules/project/project.module';
 import { ProjectMemberModule } from './modules/project-member/project-member.module';
 import { BoardModule } from './modules/board/board.module';
@@ -44,6 +54,13 @@ import { AttachmentModule } from './modules/attachment/attachment.module';
     PrismaModule,
     PasswordModule,
     TokenModule,
+    ServeStaticModule.forRoot({
+      rootPath: getUploadPath(),
+      serveRoot: '/uploads',
+      serveStaticOptions: {
+        index: false,
+      },
+    }),
     StorageModule,
     QueueModule,
     EmailModule,
@@ -53,6 +70,7 @@ import { AttachmentModule } from './modules/attachment/attachment.module';
     NotificationModule,
     WorkspaceModule,
     WorkspaceMemberModule,
+    WorkspaceInvitationModule,
     ProjectModule,
     ProjectMemberModule,
     BoardModule,

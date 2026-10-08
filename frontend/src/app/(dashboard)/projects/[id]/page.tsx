@@ -10,15 +10,18 @@ import {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
 } from '@/features/project/hooks/use-projects';
-import type { Project } from '@/types/project';
+import type { Project, ProjectMember, ProjectRole, ProjectStatus, UpdateProjectDto } from '@/types/project';
 import { useBoards } from '@/features/board/hooks/use-boards';
 import { CreateBoardDialog } from '@/features/board/components/create-board-dialog';
-import { PageHeader } from '@/components/ui/page-header';
+import { AddProjectMemberDialog } from '@/features/project/components/add-project-member-dialog';
+import { ChangeProjectMemberRoleDialog } from '@/features/project/components/change-project-member-role-dialog';
+import { RemoveProjectMemberDialog } from '@/features/project/components/remove-project-member-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   CheckCircle2,
   Clock,
@@ -30,6 +33,11 @@ import {
   Users,
   ArrowLeft,
   ChevronRight,
+  MoreHorizontal,
+  Shield,
+  UserPlus,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 
 export default function ProjectDetailPage() {
@@ -40,11 +48,19 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<'boards' | 'statistics' | 'members' | 'settings'>('boards');
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+
+  // Member management states
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<ProjectMember | null>(null);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [showRemoveMemberDialog, setShowRemoveMemberDialog] = useState(false);
+  const [openMemberMenuId, setOpenMemberMenuId] = useState<number | null>(null);
 
   const { data: project, isLoading, isError } = useProject(projectId);
   const { data: stats } = useProjectStatistics(projectId);
   const { data: boardsData, isLoading: isLoadingBoards } = useBoards({ projectId });
-  const { data: membersData } = useProjectMembers(projectId);
+  const { data: membersData, isLoading: isLoadingMembers } = useProjectMembers(projectId);
 
   const { mutate: updateProject, isPending: isUpdating } = useUpdateProjectMutation(projectId);
   const { mutate: deleteProject, isPending: isDeleting } = useDeleteProjectMutation();
@@ -52,7 +68,12 @@ export default function ProjectDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Skeleton className="h-24 rounded-[20px]" />
           <Skeleton className="h-24 rounded-[20px]" />
@@ -77,11 +98,43 @@ export default function ProjectDetailPage() {
   }
 
   const boards = boardsData?.items ?? [];
+  const rawMembers = membersData as unknown;
+  const members: ProjectMember[] = Array.isArray(rawMembers)
+    ? (rawMembers as ProjectMember[])
+    : (membersData?.items ?? []);
 
   const handleDelete = () => {
     deleteProject(projectId, {
       onSuccess: () => router.push('/projects'),
     });
+  };
+
+  const handleToggleArchive = () => {
+    const nextStatus: ProjectStatus = project.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE';
+    updateProject(
+      { status: nextStatus },
+      {
+        onSuccess: () => {
+          setShowArchiveConfirm(false);
+        },
+      },
+    );
+  };
+
+  const getRoleBadgeVariant = (role: ProjectRole) => {
+    switch (role) {
+      case 'OWNER':
+        return 'default';
+      case 'MANAGER':
+        return 'info';
+      case 'DEVELOPER':
+        return 'secondary';
+      case 'TESTER':
+        return 'warning';
+      case 'VIEWER':
+      default:
+        return 'outline';
+    }
   };
 
   return (
@@ -102,10 +155,28 @@ export default function ProjectDetailPage() {
         <span className="font-semibold text-foreground truncate">{project.name}</span>
       </div>
 
-      <PageHeader
-        title={project.name}
-        description={project.description || 'Project dashboard, boards, and statistics.'}
-      />
+      {/* Header with Badges */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              {project.name}
+            </h1>
+            <Badge variant="outline" className="text-xs font-mono font-bold uppercase tracking-wide">
+              {project.key}
+            </Badge>
+            <Badge
+              variant={project.status === 'ACTIVE' ? 'success' : 'secondary'}
+              className="text-xs font-semibold"
+            >
+              {project.status}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {project.description || 'Project dashboard, boards, contributors, and settings.'}
+          </p>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-1">
@@ -140,7 +211,7 @@ export default function ProjectDetailPage() {
           }`}
         >
           <Users className="h-4 w-4" />
-          Members ({membersData?.items?.length ?? 0})
+          Contributors ({members.length})
         </button>
         <button
           onClick={() => setActiveTab('settings')}
@@ -159,9 +230,14 @@ export default function ProjectDetailPage() {
       {activeTab === 'boards' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-foreground">Kanban Boards</h2>
-            <Button size="sm" onClick={() => setShowCreateBoard(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
+            <div>
+              <h2 className="text-base font-bold text-foreground">Kanban Boards</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Workflows and task columns belonging to this project.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setShowCreateBoard(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" />
               Create Board
             </Button>
           </div>
@@ -173,16 +249,13 @@ export default function ProjectDetailPage() {
               ))}
             </div>
           ) : boards.length === 0 ? (
-            <div className="p-8 text-center rounded-[20px] border border-dashed border-border bg-card/50">
-              <Kanban className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-semibold text-foreground">No boards yet</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                Create a Kanban board to begin adding task columns and moving work forward.
-              </p>
-              <Button size="sm" className="mt-4" onClick={() => setShowCreateBoard(true)}>
-                Create First Board
-              </Button>
-            </div>
+            <EmptyState
+              icon={<Kanban className="h-6 w-6 text-muted-foreground" />}
+              title="No boards yet"
+              description="Create your first Kanban board to start tracking tasks and pipelines."
+              actionLabel="Create Board"
+              onAction={() => setShowCreateBoard(true)}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {boards.map((board) => (
@@ -229,7 +302,7 @@ export default function ProjectDetailPage() {
                 <Layout className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-muted-foreground">Total Tasks</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Tasks</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
               </div>
             </div>
@@ -239,7 +312,7 @@ export default function ProjectDetailPage() {
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-muted-foreground">Completed</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completed</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.done ?? 0}</p>
               </div>
             </div>
@@ -249,7 +322,7 @@ export default function ProjectDetailPage() {
                 <Clock className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-muted-foreground">In Progress</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">In Progress</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.inProgress ?? 0}</p>
               </div>
             </div>
@@ -259,7 +332,7 @@ export default function ProjectDetailPage() {
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-muted-foreground">Completion Rate</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Completion Rate</p>
                 <p className="text-2xl font-bold text-foreground">
                   {stats?.total ? `${Math.round((stats.done / stats.total) * 100)}%` : '0%'}
                 </p>
@@ -269,34 +342,140 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
-      {/* Tab: Members */}
+      {/* Tab: Members / Contributors */}
       {activeTab === 'members' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-foreground text-base">Project Contributors</h3>
+            <div>
+              <h3 className="font-bold text-foreground text-base">Project Contributors</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Teammates assigned to this project and their role permissions.
+              </p>
+            </div>
+
+            <Button
+              size="sm"
+              onClick={() => setShowAddMember(true)}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Contributor
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {membersData?.items?.map((member) => (
-              <div
-                key={member.id}
-                className="p-4 rounded-[20px] border border-border bg-card flex items-center gap-3"
-              >
-                <div className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-xs">
-                  {member.user?.name ? member.user.name.substring(0, 2).toUpperCase() : 'U'}
+          {isLoadingMembers ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 rounded-[20px] border border-border bg-card space-y-2">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-40" />
                 </div>
-                <div className="truncate flex-1">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {member.user?.name ?? 'Unknown Member'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{member.user?.email}</p>
-                </div>
-                <Badge variant="secondary" className="capitalize text-[10px]">
-                  {member.role.toLowerCase()}
-                </Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : members.length === 0 ? (
+            <EmptyState
+              icon={<Users className="h-6 w-6 text-muted-foreground" />}
+              title="No contributors yet"
+              description="Assign workspace teammates to collaborate on this project."
+              actionLabel="Add Contributor"
+              onAction={() => setShowAddMember(true)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {members.map((member) => {
+                const initials = member.user?.name
+                  ? member.user.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase()
+                  : 'U';
+
+                return (
+                  <div
+                    key={member.id}
+                    className="p-4 rounded-[20px] border border-border bg-card flex items-center justify-between gap-3 shadow-xs hover:border-primary/30 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-primary/20">
+                        {member.user?.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={member.user.avatarUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          initials
+                        )}
+                      </div>
+                      <div className="truncate min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {member.user?.name ?? 'Unknown Member'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {member.user?.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant={getRoleBadgeVariant(member.role)}
+                        className="capitalize text-[10px] font-semibold"
+                      >
+                        {member.role.toLowerCase()}
+                      </Badge>
+
+                      {/* Member Actions Menu */}
+                      <div className="relative inline-block text-left">
+                        <button
+                          onClick={() =>
+                            setOpenMemberMenuId(openMemberMenuId === member.id ? null : member.id)
+                          }
+                          className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Actions</span>
+                        </button>
+
+                        {openMemberMenuId === member.id && (
+                          <div
+                            className="absolute right-0 mt-1 w-44 rounded-xl bg-card border border-border shadow-lg p-1 z-30 animate-in fade-in zoom-in-95"
+                            onMouseLeave={() => setOpenMemberMenuId(null)}
+                          >
+                            <button
+                              onClick={() => {
+                                setOpenMemberMenuId(null);
+                                setSelectedMember(member);
+                                setShowRoleDialog(true);
+                              }}
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg hover:bg-secondary text-left font-medium transition-colors text-foreground"
+                            >
+                              <Shield className="h-3.5 w-3.5" /> Change Role
+                            </button>
+                            <div className="h-px bg-border my-1" />
+                            <button
+                              onClick={() => {
+                                setOpenMemberMenuId(null);
+                                setSelectedMember(member);
+                                setShowRemoveMemberDialog(true);
+                              }}
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-lg hover:bg-destructive/10 text-destructive text-left font-medium transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" /> Remove from Project
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -304,16 +483,45 @@ export default function ProjectDetailPage() {
       {activeTab === 'settings' && (
         <div className="max-w-xl space-y-6">
           <ProjectSettingsForm
-            key={`${project.id}-${project.name}-${project.description ?? ''}`}
+            key={`${project.id}-${project.name}-${project.key}-${project.status}-${project.color ?? ''}`}
             project={project}
             isUpdating={isUpdating}
             onUpdate={updateProject}
           />
 
-          <div className="pt-6 border-t border-border">
-            <h4 className="text-sm font-semibold text-destructive mb-1">Danger Zone</h4>
-            <p className="text-xs text-muted-foreground mb-4">
-              Permanently delete this project and all associated Kanban boards and tasks.
+          {/* Archive / Restore Action */}
+          <div className="p-6 rounded-[20px] border border-border bg-card space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">
+              {project.status === 'ACTIVE' ? 'Archive Project' : 'Restore Project'}
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              {project.status === 'ACTIVE'
+                ? 'Archiving this project hides it from active boards and filters while preserving all tasks and historical data.'
+                : 'Restoring this project brings it back to active workflows and board listings.'}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowArchiveConfirm(true)}
+              className="gap-2"
+            >
+              {project.status === 'ACTIVE' ? (
+                <>
+                  <Archive className="h-3.5 w-3.5" /> Archive Project
+                </>
+              ) : (
+                <>
+                  <ArchiveRestore className="h-3.5 w-3.5" /> Restore Project
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="p-6 rounded-[20px] border border-destructive/20 bg-destructive/5 space-y-3">
+            <h4 className="text-sm font-semibold text-destructive">Danger Zone</h4>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete this project and all associated Kanban boards, task columns, and tasks.
             </p>
             <Button
               variant="destructive"
@@ -328,11 +536,52 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
+      {/* Add Project Member Dialog */}
+      <AddProjectMemberDialog
+        projectId={projectId}
+        workspaceId={project.workspaceId}
+        open={showAddMember}
+        onOpenChange={setShowAddMember}
+        existingMemberUserIds={members.map((m) => m.userId)}
+      />
+
+      {/* Change Member Role Dialog */}
+      <ChangeProjectMemberRoleDialog
+        projectId={projectId}
+        member={selectedMember}
+        open={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+      />
+
+      {/* Remove Member Dialog */}
+      <RemoveProjectMemberDialog
+        projectId={projectId}
+        member={selectedMember}
+        open={showRemoveMemberDialog}
+        onOpenChange={setShowRemoveMemberDialog}
+      />
+
       {/* Create Board Dialog */}
       <CreateBoardDialog
         projectId={projectId}
         open={showCreateBoard}
         onOpenChange={setShowCreateBoard}
+      />
+
+      {/* Archive / Restore Confirmation */}
+      <ConfirmDialog
+        open={showArchiveConfirm}
+        onOpenChange={setShowArchiveConfirm}
+        title={project.status === 'ACTIVE' ? 'Archive Project?' : 'Restore Project?'}
+        description={
+          project.status === 'ACTIVE'
+            ? `Are you sure you want to archive "${project.name}"? You can restore it anytime.`
+            : `Are you sure you want to restore "${project.name}" back to active projects?`
+        }
+        confirmText={project.status === 'ACTIVE' ? 'Archive' : 'Restore'}
+        variant={project.status === 'ACTIVE' ? 'default' : 'default'}
+        isPending={isUpdating}
+        onConfirm={handleToggleArchive}
       />
 
       {/* Delete Confirmation */}
@@ -343,6 +592,7 @@ export default function ProjectDetailPage() {
         description={`Are you sure you want to delete "${project.name}"? This action cannot be undone.`}
         confirmText="Delete Project"
         variant="destructive"
+        isPending={isDeleting}
         onConfirm={handleDelete}
       />
     </div>
@@ -352,8 +602,18 @@ export default function ProjectDetailPage() {
 interface ProjectSettingsFormProps {
   project: Project;
   isUpdating: boolean;
-  onUpdate: (data: { name: string; description?: string }) => void;
+  onUpdate: (data: UpdateProjectDto) => void;
 }
+
+const COLOR_PRESETS = [
+  '#5B5CEB',
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#EC4899',
+];
 
 function ProjectSettingsForm({
   project,
@@ -361,18 +621,28 @@ function ProjectSettingsForm({
   onUpdate,
 }: ProjectSettingsFormProps) {
   const [name, setName] = useState(project.name);
+  const [key, setKey] = useState(project.key);
   const [description, setDescription] = useState(project.description || '');
+  const [color, setColor] = useState(project.color || '#5B5CEB');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate({ name, description });
+    onUpdate({
+      name: name.trim(),
+      key: key.trim().toUpperCase(),
+      description: description.trim(),
+      color,
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
-          Project Name
+    <form onSubmit={handleSubmit} className="p-6 rounded-[20px] border border-border bg-card space-y-4 shadow-xs">
+      <h3 className="font-bold text-base text-foreground">General Settings</h3>
+
+      {/* Project Name */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+          Project Name *
         </label>
         <Input
           value={name}
@@ -382,8 +652,26 @@ function ProjectSettingsForm({
         />
       </div>
 
-      <div>
-        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">
+      {/* Project Key */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+          Project Key *
+        </label>
+        <Input
+          value={key}
+          onChange={(e) => setKey(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+          disabled={isUpdating}
+          required
+          maxLength={10}
+        />
+        <p className="text-[11px] text-muted-foreground">
+          Task identifiers prefix (e.g. {key || 'PROJ'}-123).
+        </p>
+      </div>
+
+      {/* Description */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
           Description
         </label>
         <textarea
@@ -395,10 +683,33 @@ function ProjectSettingsForm({
         />
       </div>
 
-      <Button type="submit" isLoading={isUpdating}>
-        Save Changes
-      </Button>
+      {/* Color Tag */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+          Project Color Tag
+        </label>
+        <div className="flex items-center gap-2 pt-1">
+          {COLOR_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setColor(preset)}
+              className={`h-7 w-7 rounded-full transition-transform ${
+                color === preset
+                  ? 'ring-2 ring-primary ring-offset-2 scale-110'
+                  : 'opacity-80 hover:opacity-100 hover:scale-105'
+              }`}
+              style={{ backgroundColor: preset }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-2">
+        <Button type="submit" isLoading={isUpdating}>
+          Save Changes
+        </Button>
+      </div>
     </form>
   );
 }
-

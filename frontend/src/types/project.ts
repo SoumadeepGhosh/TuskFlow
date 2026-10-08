@@ -39,10 +39,14 @@ export interface Project {
   id: number;
   workspaceId: number;
   name: string;
-  slug: string;
+  key: string;
+  slug?: string;
   description: string | null;
   status: ProjectStatus;
   color?: string | null;
+  icon?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   createdAt: string;
   updatedAt: string;
   workspace?: Workspace;
@@ -68,13 +72,14 @@ export interface CreateProjectDto {
 
 export interface UpdateProjectDto {
   name?: string;
+  key?: string;
   description?: string;
   status?: ProjectStatus;
   color?: string;
 }
 
 export interface AddProjectMemberDto {
-  userId: number;
+  email: string;
   role: ProjectRole;
 }
 

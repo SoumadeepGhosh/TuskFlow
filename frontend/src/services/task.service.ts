@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/axios';
+import { tokenStorage } from '@/lib/tokens';
 import {
   Task,
   TaskDetail,
@@ -183,12 +184,62 @@ export const taskService = {
       unknown,
       { data?: PaginatedResponse<TaskAttachment> } & PaginatedResponse<TaskAttachment>
     >('/attachments', {
-      params: { taskId, limit: 50 },
+      params: { taskId, limit: 100 },
     });
     return (res?.data ?? res) as PaginatedResponse<TaskAttachment>;
   },
 
-  async uploadAttachment(taskId: number, file: File): Promise<TaskAttachment> {
+  getAttachmentViewUrl(id: number): string {
+    const token = tokenStorage.getAccessToken();
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    return `${base}/attachments/${id}/view${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  },
+
+  getAttachmentDownloadUrl(id: number): string {
+    const token = tokenStorage.getAccessToken();
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    return `${base}/attachments/${id}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  },
+
+  async getAttachmentBlob(id: number): Promise<{ blob: Blob; contentType: string }> {
+    const token = tokenStorage.getAccessToken();
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const res = await fetch(`${base}/attachments/${id}/view`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to load file preview (${res.status} ${res.statusText})`);
+    }
+    const contentType = res.headers.get('content-type') || 'application/octet-stream';
+    const blob = await res.blob();
+    return { blob, contentType };
+  },
+
+  async downloadAttachment(id: number, fileName: string): Promise<void> {
+    const token = tokenStorage.getAccessToken();
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const res = await fetch(`${base}/attachments/${id}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to download file (${res.status} ${res.statusText})`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async uploadAttachment(
+    taskId: number,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<TaskAttachment> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('taskId', taskId.toString());
@@ -199,6 +250,12 @@ export const taskService = {
     >('/attachments', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
       },
     });
     return (res?.data ?? res) as TaskAttachment;

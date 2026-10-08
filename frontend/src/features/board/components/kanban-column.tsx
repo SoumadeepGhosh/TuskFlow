@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BoardColumn } from '@/types/board';
@@ -33,6 +33,7 @@ export function KanbanColumn({
   const [columnName, setColumnName] = useState(column.name);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -43,6 +44,29 @@ export function KanbanColumn({
   });
 
   const taskIds = useMemo(() => (tasks || []).map((t) => t.id), [tasks]);
+
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMenu]);
 
   const handleSaveName = () => {
     if (columnName.trim() && columnName !== column.name) {
@@ -56,7 +80,7 @@ export function KanbanColumn({
       ref={setNodeRef}
       className={cn(
         'w-80 shrink-0 flex flex-col max-h-full rounded-2xl bg-secondary/50 border border-border/80 transition-colors',
-        isOver && 'ring-2 ring-primary/30 bg-primary/5'
+        isOver && 'ring-2 ring-primary/30 bg-primary/5',
       )}
     >
       {/* Column Header */}
@@ -94,20 +118,18 @@ export function KanbanColumn({
           )}
         </div>
 
-        {/* Column Actions */}
-        <div className="relative">
+        {/* Column Actions Dropdown */}
+        <div className="relative" ref={menuRef}>
           <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
+            onClick={() => setShowMenu((prev) => !prev)}
+            aria-expanded={showMenu}
+            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors focus:outline-none"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
 
           {showMenu && (
-            <div
-              className="absolute right-0 mt-1 w-36 bg-popover text-popover-foreground border border-border rounded-xl shadow-lg p-1 z-30 animate-in fade-in zoom-in-95"
-              onMouseLeave={() => setShowMenu(false)}
-            >
+            <div className="absolute right-0 mt-1 w-36 bg-popover text-popover-foreground border border-border rounded-xl shadow-lg p-1 z-30 animate-in fade-in zoom-in-95">
               <button
                 onClick={() => {
                   setIsEditing(true);
@@ -140,7 +162,7 @@ export function KanbanColumn({
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="py-8 text-center text-xs text-muted-foreground border-2 border-dashed border-border/60 rounded-xl">
+          <div className="py-8 text-center text-xs text-muted-foreground border-2 border-dashed border-border/60 rounded-xl bg-background/30">
             Drop tasks here
           </div>
         )}
@@ -163,7 +185,7 @@ export function KanbanColumn({
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         title="Delete Column"
-        description={`Are you sure you want to delete "${column.name}"? All tasks inside it will also be deleted.`}
+        description={`Are you sure you want to delete "${column.name}"? Note that columns containing tasks cannot be deleted.`}
         confirmText="Delete Column"
         variant="destructive"
         onConfirm={() => onDeleteColumn(column.id)}
@@ -171,4 +193,3 @@ export function KanbanColumn({
     </div>
   );
 }
-

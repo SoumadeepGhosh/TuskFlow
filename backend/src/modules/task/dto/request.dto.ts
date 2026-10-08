@@ -84,28 +84,33 @@ export class CreateTaskDto {
   @MaxLength(5000)
   description?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     enum: TaskPriority,
-    example: TaskPriority.HIGH,
+    example: TaskPriority.MEDIUM,
+    default: TaskPriority.MEDIUM,
   })
+  @IsOptional()
   @IsEnum(TaskPriority)
-  priority!: TaskPriority;
+  priority?: TaskPriority = TaskPriority.MEDIUM;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     enum: TaskStatus,
     example: TaskStatus.TODO,
+    default: TaskStatus.TODO,
   })
+  @IsOptional()
   @IsEnum(TaskStatus)
-  status!: TaskStatus;
+  status?: TaskStatus = TaskStatus.TODO;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Task position inside the column',
+    description: 'Task position inside the column (auto-assigned if omitted)',
   })
   @Type(() => Number)
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  position!: number;
+  @Min(0)
+  position?: number;
 
   @ApiProperty({
     required: false,

@@ -49,3 +49,41 @@ export interface AddMemberDto {
   email: string;
   role?: WorkspaceRole;
 }
+
+export type InvitationStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export interface WorkspaceInvitation {
+  id: number;
+  workspaceId: number;
+  email: string;
+  role: WorkspaceRole;
+  status: InvitationStatus;
+  token?: string;
+  expiresAt: string;
+  acceptedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  inviter?: {
+    id: number;
+    name: string | null;
+    email: string;
+    avatarUrl?: string | null;
+  };
+  workspace?: {
+    id: number;
+    name: string;
+    slug: string;
+    description?: string | null;
+    logoUrl?: string | null;
+  };
+}
+
+export interface InviteMemberDto {
+  email: string;
+  role?: WorkspaceRole;
+}

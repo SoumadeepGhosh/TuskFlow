@@ -71,14 +71,15 @@ export class CreateBoardColumnDto {
   @MaxLength(20)
   color?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Column position inside the board',
+    description: 'Column position inside the board (auto-assigned if omitted)',
   })
   @Type(() => Number)
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  position!: number;
+  @Min(0)
+  position?: number;
 }
 
 export class UpdateBoardColumnDto extends PartialType(CreateBoardColumnDto) {}

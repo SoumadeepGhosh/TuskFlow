@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -19,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -34,7 +36,13 @@ export class AttachmentController {
   constructor(private readonly attachmentService: AttachmentService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 25 * 1024 * 1024, // 25 MB max limit
+      },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -70,14 +78,63 @@ export class AttachmentController {
   @Get()
   findAll(
     @Query('taskId', ParseIntPipe) taskId: number,
+    @CurrentUser() user: JwtPayload,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.attachmentService.findAll({
-      taskId,
-      page: Number(page) || 1,
-      limit: Number(limit) || 10,
-    });
+    return this.attachmentService.findAll(
+      {
+        taskId,
+        page: Number(page) || 1,
+        limit: Number(limit) || 50,
+      },
+      user,
+    );
+  }
+
+  @Get(':id/view')
+  async view(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    const { stream, attachment, fileSize } =
+      await this.attachmentService.getFileStream(id, user);
+
+    res.setHeader(
+      'Content-Type',
+      attachment.mimeType || 'application/octet-stream',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${encodeURIComponent(attachment.fileName)}"`,
+    );
+    res.setHeader('Content-Length', fileSize);
+    res.setHeader('Cache-Control', 'private, max-age=86400');
+
+    stream.pipe(res);
+  }
+
+  @Get(':id/download')
+  async download(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    const { stream, attachment, fileSize } =
+      await this.attachmentService.getFileStream(id, user);
+
+    res.setHeader(
+      'Content-Type',
+      attachment.mimeType || 'application/octet-stream',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(attachment.fileName)}"`,
+    );
+    res.setHeader('Content-Length', fileSize);
+
+    stream.pipe(res);
   }
 
   @Delete(':id')

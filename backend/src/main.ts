@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -24,9 +25,16 @@ async function bootstrap() {
   // Global Prefix
   app.setGlobalPrefix(apiPrefix);
 
-  // Serve static uploads
-  app.useStaticAssets(path.join(process.cwd(), 'uploads'), {
+  // Serve static uploads (robust path check)
+  const uploadPath = fs.existsSync(path.resolve(process.cwd(), 'backend', 'uploads'))
+    ? path.resolve(process.cwd(), 'backend', 'uploads')
+    : path.resolve(process.cwd(), 'uploads');
+
+  app.useStaticAssets(uploadPath, {
     prefix: '/uploads/',
+  });
+  app.useStaticAssets(uploadPath, {
+    prefix: `/${apiPrefix}/uploads/`,
   });
 
   // Global Validation

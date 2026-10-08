@@ -2,9 +2,11 @@ import { apiClient } from '@/lib/axios';
 import {
   AddMemberDto,
   CreateWorkspaceDto,
+  InviteMemberDto,
   MemberStatus,
   UpdateWorkspaceDto,
   Workspace,
+  WorkspaceInvitation,
   WorkspaceMember,
   WorkspaceRole,
 } from '@/types/workspace';
@@ -141,5 +143,64 @@ export const workspaceService = {
     memberId: number,
   ): Promise<{ message?: string }> {
     return apiClient.delete(`/workspaces/${workspaceId}/members/${memberId}`);
+  },
+
+  // Workspace Invitations
+  async getInvitations(workspaceId: number): Promise<WorkspaceInvitation[]> {
+    const res = await apiClient.get<
+      unknown,
+      { data?: WorkspaceInvitation[] } | WorkspaceInvitation[]
+    >(`/workspaces/${workspaceId}/invitations`);
+    const payload = ((res as { data?: unknown })?.data ?? res) as WorkspaceInvitation[];
+    return Array.isArray(payload) ? payload : [];
+  },
+
+  async inviteMember(
+    workspaceId: number,
+    data: InviteMemberDto,
+  ): Promise<WorkspaceInvitation> {
+    const res = await apiClient.post<
+      unknown,
+      { data?: WorkspaceInvitation } & WorkspaceInvitation
+    >(`/workspaces/${workspaceId}/invitations`, data);
+    return (res?.data ?? res) as WorkspaceInvitation;
+  },
+
+  async cancelInvitation(
+    workspaceId: number,
+    invitationId: number,
+  ): Promise<{ message?: string }> {
+    return apiClient.delete(
+      `/workspaces/${workspaceId}/invitations/${invitationId}`,
+    );
+  },
+
+  async resendInvitation(
+    workspaceId: number,
+    invitationId: number,
+  ): Promise<WorkspaceInvitation> {
+    const res = await apiClient.post<
+      unknown,
+      { data?: WorkspaceInvitation } & WorkspaceInvitation
+    >(`/workspaces/${workspaceId}/invitations/${invitationId}/resend`);
+    return (res?.data ?? res) as WorkspaceInvitation;
+  },
+
+  async getInvitationByToken(token: string): Promise<WorkspaceInvitation> {
+    const res = await apiClient.get<
+      unknown,
+      { data?: WorkspaceInvitation } & WorkspaceInvitation
+    >(`/invitations/${token}`);
+    return (res?.data ?? res) as WorkspaceInvitation;
+  },
+
+  async acceptInvitation(
+    token: string,
+  ): Promise<{ message?: string; workspaceId?: number; workspaceSlug?: string }> {
+    return apiClient.post(`/invitations/${token}/accept`);
+  },
+
+  async declineInvitation(token: string): Promise<{ message?: string }> {
+    return apiClient.post(`/invitations/${token}/decline`);
   },
 };

@@ -23,12 +23,79 @@ export class BoardRepository {
         id: projectId,
         deletedAt: null,
       },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            ownerId: true,
+          },
+        },
+        members: true,
+      },
     });
   }
 
-  findBoards(projectId?: number, page = 1, limit = 10) {
+  findWorkspaceMember(workspaceId: number, userId: number) {
+    return this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+  }
+
+  findProjectMember(projectId: number, userId: number) {
+    return this.prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+    });
+  }
+
+  findBoardByName(projectId: number, name: string) {
+    return this.prisma.board.findFirst({
+      where: {
+        projectId,
+        name: {
+          equals: name.trim(),
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  async getMaxPosition(projectId: number): Promise<number> {
+    const aggregate = await this.prisma.board.aggregate({
+      where: {
+        projectId,
+      },
+      _max: {
+        position: true,
+      },
+    });
+    return aggregate._max.position ?? -1;
+  }
+
+  findBoards(projectId?: number, page = 1, limit = 10, userId?: number) {
     return this.prisma.board.findMany({
       where: {
+        project: {
+          deletedAt: null,
+          ...(userId && {
+            OR: [
+              { createdBy: userId },
+              { members: { some: { userId } } },
+              { workspace: { members: { some: { userId } } } },
+              { workspace: { ownerId: userId } },
+            ],
+          }),
+        },
         ...(projectId && { projectId }),
       },
       skip: (page - 1) * limit,
@@ -36,12 +103,30 @@ export class BoardRepository {
       orderBy: {
         position: 'asc',
       },
+      include: {
+        _count: {
+          select: {
+            columns: true,
+          },
+        },
+      },
     });
   }
 
-  countBoards(projectId?: number) {
+  countBoards(projectId?: number, userId?: number) {
     return this.prisma.board.count({
       where: {
+        project: {
+          deletedAt: null,
+          ...(userId && {
+            OR: [
+              { createdBy: userId },
+              { members: { some: { userId } } },
+              { workspace: { members: { some: { userId } } } },
+              { workspace: { ownerId: userId } },
+            ],
+          }),
+        },
         ...(projectId && { projectId }),
       },
     });
@@ -53,6 +138,18 @@ export class BoardRepository {
         id,
       },
       include: {
+        project: {
+          include: {
+            workspace: {
+              select: {
+                id: true,
+                name: true,
+                ownerId: true,
+              },
+            },
+            members: true,
+          },
+        },
         columns: {
           orderBy: {
             position: 'asc',

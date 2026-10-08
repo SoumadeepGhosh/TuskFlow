@@ -12,6 +12,34 @@ export class ProjectMemberRepository {
         id: projectId,
         deletedAt: null,
       },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            ownerId: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findWorkspaceMember(workspaceId: number, userId: number) {
+    return this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+  }
+
+  async countOwners(projectId: number) {
+    return this.prisma.projectMember.count({
+      where: {
+        projectId,
+        role: ProjectRole.OWNER,
+      },
     });
   }
 
@@ -42,6 +70,16 @@ export class ProjectMemberRepository {
         role,
         joinedAt: new Date(),
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -63,7 +101,7 @@ export class ProjectMemberRepository {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'asc',
       },
     });
   }
@@ -81,6 +119,21 @@ export class ProjectMemberRepository {
       where: {
         id: memberId,
       },
+      include: {
+        project: {
+          select: {
+            id: true,
+            workspaceId: true,
+            createdBy: true,
+            workspace: {
+              select: {
+                id: true,
+                ownerId: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -91,6 +144,16 @@ export class ProjectMemberRepository {
       },
       data: {
         role,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }

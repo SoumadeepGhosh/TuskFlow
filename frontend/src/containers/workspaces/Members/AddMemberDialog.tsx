@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { WorkspaceRole } from '@/types/workspace';
-import { useAddMember } from '@/hooks/api/use-workspaces';
+import { useInviteMember } from '@/hooks/api/use-workspaces';
 import {
   Dialog,
   DialogDescription,
@@ -27,13 +27,13 @@ export function AddMemberDialog({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<WorkspaceRole>('MEMBER');
 
-  const addMemberMutation = useAddMember();
+  const inviteMemberMutation = useInviteMember();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
-    addMemberMutation.mutate(
+    inviteMemberMutation.mutate(
       {
         workspaceId,
         data: {
@@ -47,16 +47,16 @@ export function AddMemberDialog({
           setRole('MEMBER');
           onOpenChange(false);
         },
-      }
+      },
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogHeader onClose={() => onOpenChange(false)}>
-        <DialogTitle>Add Workspace Member</DialogTitle>
+        <DialogTitle>Invite Member to Workspace</DialogTitle>
         <DialogDescription>
-          Invite an existing user to collaborate in this workspace by their account email.
+          Send an invitation email to collaborate in this workspace. The invitee will receive a link to join.
         </DialogDescription>
       </DialogHeader>
 
@@ -70,7 +70,7 @@ export function AddMemberDialog({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="colleague@company.com"
-            disabled={addMemberMutation.isPending}
+            disabled={inviteMemberMutation.isPending}
             required
             autoFocus
           />
@@ -83,7 +83,7 @@ export function AddMemberDialog({
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as WorkspaceRole)}
-            disabled={addMemberMutation.isPending}
+            disabled={inviteMemberMutation.isPending}
             className="w-full h-11 px-3.5 rounded-[14px] border border-border bg-card text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <option value="MEMBER">Member (Can create & view tasks)</option>
@@ -96,13 +96,13 @@ export function AddMemberDialog({
           <Button
             type="button"
             variant="outline"
-            disabled={addMemberMutation.isPending}
+            disabled={inviteMemberMutation.isPending}
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button type="submit" isLoading={addMemberMutation.isPending}>
-            Add Member
+          <Button type="submit" isLoading={inviteMemberMutation.isPending}>
+            Send Invitation
           </Button>
         </DialogFooter>
       </form>

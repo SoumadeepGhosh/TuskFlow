@@ -5,6 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  MemberStatus,
+  ProjectRole,
+  ProjectStatus,
+  WorkspaceRole,
+} from '@prisma/client';
 
 import {
   CreateProjectDto,
@@ -18,6 +24,101 @@ import { ProjectRepository } from './repositories/project.repository';
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
+  private async assertCanCreateProject(workspaceId: number, userId: number) {
+    const workspace = await this.projectRepository.findWorkspace(workspaceId);
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
+
+    if (workspace.ownerId === userId) {
+      return workspace;
+    }
+
+    const member = await this.projectRepository.findWorkspaceMember(
+      workspaceId,
+      userId,
+    );
+
+    if (
+      !member ||
+      member.status !== MemberStatus.ACTIVE ||
+      (member.role !== WorkspaceRole.OWNER &&
+        member.role !== WorkspaceRole.ADMIN)
+    ) {
+      throw new ForbiddenException(
+        'Only workspace owners and administrators can create projects',
+      );
+    }
+
+    return workspace;
+  }
+
+  private async assertCanManageProject(
+    projectId: number,
+    userId: number,
+    requireOwner = false,
+  ) {
+    const project = await this.projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Workspace owner always has full rights
+    if (project.workspace?.ownerId === userId) {
+      return project;
+    }
+
+    // Workspace admin has full rights
+    const wsMember = await this.projectRepository.findWorkspaceMember(
+      project.workspaceId,
+      userId,
+    );
+    if (
+      wsMember &&
+      wsMember.status === MemberStatus.ACTIVE &&
+      (wsMember.role === WorkspaceRole.OWNER ||
+        wsMember.role === WorkspaceRole.ADMIN)
+    ) {
+      return project;
+    }
+
+    // Project creator has rights
+    if (project.createdBy === userId) {
+      return project;
+    }
+
+    // Check project member role
+    const projectMember = await this.projectRepository.findProjectMember(
+      projectId,
+      userId,
+    );
+
+    if (!projectMember) {
+      throw new ForbiddenException(
+        'You do not have permission to manage this project',
+      );
+    }
+
+    if (requireOwner) {
+      if (projectMember.role !== ProjectRole.OWNER) {
+        throw new ForbiddenException(
+          'Only project owners can perform this action',
+        );
+      }
+    } else {
+      if (
+        projectMember.role !== ProjectRole.OWNER &&
+        projectMember.role !== ProjectRole.MANAGER
+      ) {
+        throw new ForbiddenException(
+          'Only project owners and managers can perform this action',
+        );
+      }
+    }
+
+    return project;
+  }
+
   async create(
     workspaceId: number | undefined,
     dto: CreateProjectDto,
@@ -28,36 +129,29 @@ export class ProjectService {
       throw new BadRequestException('workspaceId is required');
     }
 
-    const workspace =
-      await this.projectRepository.findWorkspace(targetWorkspaceId);
+    await this.assertCanCreateProject(targetWorkspaceId, user.sub);
 
-    if (!workspace) {
-      throw new NotFoundException('Workspace not found');
-    }
-
-    if (workspace.ownerId !== user.sub) {
-      throw new ForbiddenException(
-        'You are not allowed to create projects in this workspace',
-      );
-    }
+    const formattedKey = dto.key.trim().toUpperCase();
 
     const existingProject = await this.projectRepository.findByKey(
       targetWorkspaceId,
-      dto.key,
+      formattedKey,
     );
 
     if (existingProject) {
-      throw new ConflictException('Project key already exists');
+      throw new ConflictException(
+        `Project key "${formattedKey}" already exists in this workspace`,
+      );
     }
 
-    return this.projectRepository.createProject({
+    return this.projectRepository.createProjectWithSetup({
       workspaceId: targetWorkspaceId,
-      name: dto.name,
-      key: dto.key.toUpperCase(),
-      description: dto.description,
+      name: dto.name.trim(),
+      key: formattedKey,
+      description: dto.description?.trim(),
       icon: dto.icon,
       color: dto.color,
-      status: dto.status,
+      status: dto.status || ProjectStatus.ACTIVE,
       startDate: dto.startDate,
       endDate: dto.endDate,
       createdBy: user.sub,
@@ -83,10 +177,13 @@ export class ProjectService {
         targetWorkspaceId,
         pagination.page,
         pagination.limit,
+        pagination.status,
       );
 
-      const total =
-        await this.projectRepository.countByWorkspace(targetWorkspaceId);
+      const total = await this.projectRepository.countByWorkspace(
+        targetWorkspaceId,
+        pagination.status,
+      );
 
       return {
         items: projects,
@@ -104,9 +201,14 @@ export class ProjectService {
       pagination.limit,
       undefined,
       user?.sub,
+      pagination.status,
     );
 
-    const total = await this.projectRepository.countAll(undefined, user?.sub);
+    const total = await this.projectRepository.countAll(
+      undefined,
+      user?.sub,
+      pagination.status,
+    );
 
     return {
       items: projects,
@@ -119,35 +221,66 @@ export class ProjectService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, user?: JwtPayload) {
     const project = await this.projectRepository.findById(id);
 
     if (!project) {
       throw new NotFoundException('Project not found');
+    }
+
+    if (user) {
+      // Check if user has access to this workspace or project
+      const isWorkspaceOwner = project.workspace?.ownerId === user.sub;
+      const wsMember = await this.projectRepository.findWorkspaceMember(
+        project.workspaceId,
+        user.sub,
+      );
+      const isProjectMember = project.members.some(
+        (m) => m.userId === user.sub,
+      );
+      const isCreator = project.createdBy === user.sub;
+
+      if (!isWorkspaceOwner && !wsMember && !isProjectMember && !isCreator) {
+        throw new ForbiddenException(
+          'You do not have access to view this project',
+        );
+      }
     }
 
     return project;
   }
 
-  async update(id: number, dto: UpdateProjectDto) {
-    const project = await this.projectRepository.findById(id);
+  async update(id: number, dto: UpdateProjectDto, user: JwtPayload) {
+    const project = await this.assertCanManageProject(id, user.sub, false);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
+    let updatedKey = project.key;
+    if (dto.key) {
+      const formattedKey = dto.key.trim().toUpperCase();
+      if (formattedKey !== project.key) {
+        const existingKey = await this.projectRepository.findByKey(
+          project.workspaceId,
+          formattedKey,
+        );
+        if (existingKey && existingKey.id !== id) {
+          throw new ConflictException(
+            `Project key "${formattedKey}" is already taken in this workspace`,
+          );
+        }
+        updatedKey = formattedKey;
+      }
     }
 
     return this.projectRepository.update(id, {
       ...dto,
-      key: dto.key?.toUpperCase(),
+      name: dto.name ? dto.name.trim() : undefined,
+      description:
+        dto.description !== undefined ? dto.description.trim() : undefined,
+      key: updatedKey,
     });
   }
 
-  async remove(id: number) {
-    const project = await this.projectRepository.findById(id);
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+  async remove(id: number, user: JwtPayload) {
+    await this.assertCanManageProject(id, user.sub, true);
 
     await this.projectRepository.delete(id);
 

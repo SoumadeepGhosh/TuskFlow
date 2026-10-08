@@ -66,12 +66,14 @@ export function CreateProjectDialog({
     defaultValues: {
       workspaceId: defaultWorkspaceId || (workspaces[0]?.id ?? 1),
       name: '',
+      key: '',
       description: '',
       color: '#5B5CEB',
     },
   });
 
   const watchedColor = useWatch({ control, name: 'color' });
+  const watchedKey = useWatch({ control, name: 'key' });
   const selectedColor = watchedColor || '#5B5CEB';
 
   React.useEffect(() => {
@@ -83,9 +85,20 @@ export function CreateProjectDialog({
   }, [defaultWorkspaceId, workspaces, setValue]);
 
   const onSubmit = (data: CreateProjectFormData) => {
+    const rawKey = data.key?.trim();
+    const finalKey =
+      rawKey && rawKey.length >= 2
+        ? rawKey.toUpperCase()
+        : data.name
+            .trim()
+            .replace(/[^a-zA-Z0-9]/g, '')
+            .slice(0, 4)
+            .toUpperCase() || 'PROJ';
+
     createProject(
       {
         ...data,
+        key: finalKey,
         workspaceId: Number(data.workspaceId),
       },
       {
@@ -145,7 +158,43 @@ export function CreateProjectDialog({
             placeholder="e.g. Website Redesign, Mobile App v2"
             disabled={isPending}
             error={errors.name?.message}
-            {...register('name')}
+            {...register('name', {
+              onChange: (e) => {
+                if (!watchedKey) {
+                  const autoKey = e.target.value
+                    .replace(/[^a-zA-Z0-9]/g, '')
+                    .slice(0, 4)
+                    .toUpperCase();
+                  if (autoKey) setValue('key', autoKey);
+                }
+              },
+            })}
+          />
+        </div>
+
+        {/* Project Key */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="project-key"
+              className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              Project Key
+            </label>
+            <span className="text-[11px] text-muted-foreground">
+              Prefix for tasks (e.g. {(watchedKey || 'PROJ').toUpperCase()}-1)
+            </span>
+          </div>
+          <Input
+            id="project-key"
+            placeholder="e.g. TF, APP, CORE"
+            disabled={isPending}
+            error={errors.key?.message}
+            {...register('key', {
+              onChange: (e) => {
+                setValue('key', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+              },
+            })}
           />
         </div>
 

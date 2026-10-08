@@ -14,12 +14,57 @@ export interface StoredFile {
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly uploadDir = path.resolve(process.cwd(), 'uploads');
+  private uploadDir: string;
 
   constructor() {
+    const backendUploads = path.resolve(process.cwd(), 'backend', 'uploads');
+    const rootUploads = path.resolve(process.cwd(), 'uploads');
+
+    if (fs.existsSync(backendUploads)) {
+      this.uploadDir = backendUploads;
+    } else {
+      this.uploadDir = rootUploads;
+    }
+
     if (!fs.existsSync(this.uploadDir)) {
       fs.mkdirSync(this.uploadDir, { recursive: true });
     }
+  }
+
+  getUploadDir(): string {
+    return this.uploadDir;
+  }
+
+  getFilePath(storageKey: string): string | null {
+    if (!storageKey) return null;
+
+    // Prevent directory traversal attacks
+    const sanitizedKey = storageKey
+      .replace(/^(\.\.(\/|\\|$))+/, '')
+      .replace(/[/\\]\.\.[/\\]/g, '/')
+      .replace(/^[/\\]+/, '');
+
+    // 1. Check primary uploadDir
+    const primaryPath = path.resolve(this.uploadDir, sanitizedKey);
+    if (fs.existsSync(primaryPath)) {
+      return primaryPath;
+    }
+
+    // 2. Check alternate directories (backend/uploads vs uploads)
+    const candidates = [
+      path.resolve(process.cwd(), 'uploads', sanitizedKey),
+      path.resolve(process.cwd(), 'backend', 'uploads', sanitizedKey),
+      path.resolve(__dirname, '..', '..', '..', 'uploads', sanitizedKey),
+      path.resolve(__dirname, '..', '..', '..', 'backend', 'uploads', sanitizedKey),
+    ];
+
+    for (const cand of candidates) {
+      if (fs.existsSync(cand)) {
+        return cand;
+      }
+    }
+
+    return null;
   }
 
   async saveFile(
@@ -31,7 +76,11 @@ export class StorageService {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    const ext = path.extname(file.originalname);
+    // Sanitize extension and original name
+    const rawExt = path.extname(file.originalname).toLowerCase();
+    const ext = rawExt.replace(/[^a-z0-9.]/g, '') || '.bin';
+    const originalName = path.basename(file.originalname).replace(/[\0\r\n]/g, '');
+
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const fileName = `${uniqueSuffix}${ext}`;
     const filePath = path.join(targetDir, fileName);
@@ -43,18 +92,18 @@ export class StorageService {
 
     return {
       fileName,
-      originalName: file.originalname,
+      originalName,
       fileUrl,
       fileSize: file.size,
-      mimeType: file.mimetype,
+      mimeType: file.mimetype || 'application/octet-stream',
       storageKey,
     };
   }
 
   async deleteFile(storageKey: string): Promise<boolean> {
     try {
-      const filePath = path.join(this.uploadDir, storageKey);
-      if (fs.existsSync(filePath)) {
+      const filePath = this.getFilePath(storageKey);
+      if (filePath && fs.existsSync(filePath)) {
         await fs.promises.unlink(filePath);
         return true;
       }

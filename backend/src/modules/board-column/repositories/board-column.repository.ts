@@ -21,6 +21,64 @@ export class BoardColumnRepository {
       where: {
         id: boardId,
       },
+      include: {
+        project: {
+          include: {
+            workspace: {
+              select: {
+                id: true,
+                name: true,
+                ownerId: true,
+              },
+            },
+            members: true,
+          },
+        },
+      },
+    });
+  }
+
+  findByNameInBoard(boardId: number, name: string) {
+    return this.prisma.boardColumn.findFirst({
+      where: {
+        boardId,
+        name: {
+          equals: name.trim(),
+          mode: 'insensitive',
+        },
+      },
+    });
+  }
+
+  async getMaxPosition(boardId: number): Promise<number> {
+    const aggregate = await this.prisma.boardColumn.aggregate({
+      where: {
+        boardId,
+      },
+      _max: {
+        position: true,
+      },
+    });
+    return aggregate._max.position ?? -1;
+  }
+
+  countActiveTasksInColumn(columnId: number) {
+    return this.prisma.task.count({
+      where: {
+        columnId,
+        deletedAt: null,
+      },
+    });
+  }
+
+  findWorkspaceMember(workspaceId: number, userId: number) {
+    return this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
     });
   }
 
@@ -51,6 +109,22 @@ export class BoardColumnRepository {
         id,
       },
       include: {
+        board: {
+          include: {
+            project: {
+              include: {
+                workspace: {
+                  select: {
+                    id: true,
+                    name: true,
+                    ownerId: true,
+                  },
+                },
+                members: true,
+              },
+            },
+          },
+        },
         tasks: {
           where: {
             deletedAt: null,

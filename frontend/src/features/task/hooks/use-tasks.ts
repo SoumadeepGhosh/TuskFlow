@@ -15,6 +15,8 @@ export function useTask(id: number, enabled = true) {
     queryKey: ['tasks', id],
     queryFn: () => taskService.getTask(id),
     enabled: Boolean(id) && enabled,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 }
 
@@ -46,9 +48,10 @@ export function useCreateTask(boardId?: number) {
     onSuccess: () => {
       toast.success('Task created successfully');
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create task');
@@ -63,10 +66,12 @@ export function useUpdateTask(boardId?: number) {
       taskService.updateTask(id, data),
     onSuccess: (updated) => {
       toast.success('Task updated');
-      queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update task');
@@ -81,9 +86,10 @@ export function useDeleteTask(boardId?: number) {
     onSuccess: () => {
       toast.success('Task deleted');
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete task');
@@ -98,14 +104,17 @@ export function useMoveTask(boardId?: number) {
       taskService.moveTask(id, data),
     onSuccess: () => {
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to move task');
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
   });
 }
@@ -117,10 +126,12 @@ export function useUpdateTaskStatus(boardId?: number) {
       taskService.updateStatus(id, status),
     onSuccess: (updated) => {
       toast.success('Status updated');
-      queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update status');
@@ -135,10 +146,12 @@ export function useUpdateTaskPriority(boardId?: number) {
       taskService.updatePriority(id, priority),
     onSuccess: (updated) => {
       toast.success('Priority updated');
-      queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', updated.id] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update priority');
@@ -153,10 +166,11 @@ export function useAssignUser(taskId: number, boardId?: number) {
     mutationFn: (userId: number) => taskService.assignUser(taskId, userId),
     onSuccess: () => {
       toast.success('Member assigned');
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to assign user');
@@ -170,10 +184,11 @@ export function useRemoveUser(taskId: number, boardId?: number) {
     mutationFn: (userId: number) => taskService.removeUser(taskId, userId),
     onSuccess: () => {
       toast.success('Member unassigned');
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove user');
@@ -196,7 +211,7 @@ export function useCreateLabel(projectId?: number) {
     mutationFn: (data: CreateLabelDto) => taskService.createLabel(data),
     onSuccess: () => {
       toast.success('Label created');
-      queryClient.invalidateQueries({ queryKey: ['labels', projectId] });
+      void queryClient.invalidateQueries({ queryKey: ['labels', projectId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create label');
@@ -210,10 +225,11 @@ export function useAssignLabel(taskId: number, boardId?: number) {
     mutationFn: (labelId: number) => taskService.assignLabel(taskId, labelId),
     onSuccess: () => {
       toast.success('Label added');
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to add label');
@@ -227,10 +243,11 @@ export function useRemoveLabel(taskId: number, boardId?: number) {
     mutationFn: (labelId: number) => taskService.removeLabel(taskId, labelId),
     onSuccess: () => {
       toast.success('Label removed');
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
       if (boardId) {
-        queryClient.invalidateQueries({ queryKey: ['boards', boardId] });
+        void queryClient.invalidateQueries({ queryKey: ['boards', 'detail', boardId] });
       }
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove label');
@@ -253,8 +270,8 @@ export function useCreateComment(taskId: number) {
     mutationFn: (content: string) => taskService.createComment(taskId, content),
     onSuccess: () => {
       toast.success('Comment posted');
-      queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to post comment');
@@ -268,8 +285,8 @@ export function useDeleteComment(taskId: number) {
     mutationFn: (id: number) => taskService.deleteComment(id),
     onSuccess: () => {
       toast.success('Comment deleted');
-      queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['comments', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete comment');
@@ -292,8 +309,8 @@ export function useUploadAttachment(taskId: number) {
     mutationFn: (file: File) => taskService.uploadAttachment(taskId, file),
     onSuccess: () => {
       toast.success('File uploaded');
-      queryClient.invalidateQueries({ queryKey: ['attachments', taskId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['attachments', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to upload attachment');
@@ -307,12 +324,11 @@ export function useDeleteAttachment(taskId: number) {
     mutationFn: (id: number) => taskService.deleteAttachment(id),
     onSuccess: () => {
       toast.success('Attachment deleted');
-      queryClient.invalidateQueries({ queryKey: ['attachments', taskId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['attachments', taskId] });
+      void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete attachment');
     },
   });
 }
-

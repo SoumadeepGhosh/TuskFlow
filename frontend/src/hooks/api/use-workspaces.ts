@@ -5,6 +5,7 @@ import { ApiError } from '@/types/api';
 import {
   AddMemberDto,
   CreateWorkspaceDto,
+  InviteMemberDto,
   MemberStatus,
   UpdateWorkspaceDto,
   WorkspaceRole,
@@ -216,6 +217,147 @@ export function useRemoveMember() {
         error.response?.data?.message ||
         error.message ||
         'Failed to remove member';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useWorkspaceInvitations(workspaceId: number) {
+  return useQuery({
+    queryKey: ['workspace-invitations', workspaceId],
+    queryFn: () => workspaceService.getInvitations(workspaceId),
+    enabled: Boolean(workspaceId) && !isNaN(workspaceId),
+  });
+}
+
+export function useInviteMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      data,
+    }: {
+      workspaceId: number;
+      data: InviteMemberDto;
+    }) => workspaceService.inviteMember(workspaceId, data),
+    onSuccess: (_, variables) => {
+      toast.success('Invitation sent successfully');
+      void queryClient.invalidateQueries({
+        queryKey: ['workspace-invitations', variables.workspaceId],
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to send invitation';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useCancelInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      invitationId,
+    }: {
+      workspaceId: number;
+      invitationId: number;
+    }) => workspaceService.cancelInvitation(workspaceId, invitationId),
+    onSuccess: (_, variables) => {
+      toast.success('Invitation cancelled');
+      void queryClient.invalidateQueries({
+        queryKey: ['workspace-invitations', variables.workspaceId],
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to cancel invitation';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useResendInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      invitationId,
+    }: {
+      workspaceId: number;
+      invitationId: number;
+    }) => workspaceService.resendInvitation(workspaceId, invitationId),
+    onSuccess: (_, variables) => {
+      toast.success('Invitation resent successfully');
+      void queryClient.invalidateQueries({
+        queryKey: ['workspace-invitations', variables.workspaceId],
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to resend invitation';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useInvitationByToken(token: string) {
+  return useQuery({
+    queryKey: ['invitation', token],
+    queryFn: () => workspaceService.getInvitationByToken(token),
+    enabled: Boolean(token),
+    retry: false,
+  });
+}
+
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => workspaceService.acceptInvitation(token),
+    onSuccess: (data) => {
+      toast.success('Invitation accepted! Welcome to the workspace.');
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      if (data?.workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: ['workspace', data.workspaceId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ['workspace-members', data.workspaceId],
+        });
+      }
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to accept invitation';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useDeclineInvitation() {
+  return useMutation({
+    mutationFn: (token: string) => workspaceService.declineInvitation(token),
+    onSuccess: () => {
+      toast.info('Invitation declined');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to decline invitation';
       toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
     },
   });

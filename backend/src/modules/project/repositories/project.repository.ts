@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma/prisma.service';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectRole, ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
@@ -11,6 +11,28 @@ export class ProjectRepository {
       where: {
         id: workspaceId,
         deletedAt: null,
+      },
+    });
+  }
+
+  async findWorkspaceMember(workspaceId: number, userId: number) {
+    return this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+  }
+
+  async findProjectMember(projectId: number, userId: number) {
+    return this.prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
       },
     });
   }
@@ -26,7 +48,7 @@ export class ProjectRepository {
     });
   }
 
-  async createProject(data: {
+  async createProjectWithSetup(data: {
     workspaceId: number;
     name: string;
     key: string;
@@ -38,30 +60,106 @@ export class ProjectRepository {
     endDate?: Date;
     createdBy: number;
   }) {
-    return this.prisma.project.create({
-      data,
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create project
+      const project = await tx.project.create({
+        data,
+      });
+
+      // 2. Automatically enroll creator as OWNER in ProjectMember
+      await tx.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId: data.createdBy,
+          role: ProjectRole.OWNER,
+          joinedAt: new Date(),
+        },
+      });
+
+      // 3. Automatically provision initial default Kanban Board and columns
+      const defaultBoard = await tx.board.create({
+        data: {
+          projectId: project.id,
+          name: 'Main Board',
+          description: 'Default project Kanban board',
+          position: 0,
+          createdBy: data.createdBy,
+        },
+      });
+
+      await tx.boardColumn.createMany({
+        data: [
+          {
+            boardId: defaultBoard.id,
+            name: 'To Do',
+            position: 0,
+            color: '#94A3B8',
+          },
+          {
+            boardId: defaultBoard.id,
+            name: 'In Progress',
+            position: 1,
+            color: '#3B82F6',
+          },
+          {
+            boardId: defaultBoard.id,
+            name: 'Done',
+            position: 2,
+            color: '#10B981',
+          },
+        ],
+      });
+
+      return project;
     });
   }
 
-  async findAllByWorkspace(workspaceId: number, page: number, limit: number) {
+  async findAllByWorkspace(
+    workspaceId: number,
+    page: number,
+    limit: number,
+    status?: ProjectStatus,
+  ) {
     return this.prisma.project.findMany({
       where: {
         workspaceId,
         deletedAt: null,
+        ...(status && { status }),
       },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            boards: true,
+            tasks: {
+              where: {
+                deletedAt: null,
+              },
+            },
+            members: true,
+          },
+        },
+      },
     });
   }
 
-  async countByWorkspace(workspaceId: number) {
+  async countByWorkspace(workspaceId: number, status?: ProjectStatus) {
     return this.prisma.project.count({
       where: {
         workspaceId,
         deletedAt: null,
+        ...(status && { status }),
       },
     });
   }
@@ -71,11 +169,13 @@ export class ProjectRepository {
     limit: number,
     workspaceId?: number,
     userId?: number,
+    status?: ProjectStatus,
   ) {
     return this.prisma.project.findMany({
       where: {
         deletedAt: null,
         ...(workspaceId && { workspaceId }),
+        ...(status && { status }),
         ...(userId && {
           OR: [
             { createdBy: userId },
@@ -89,14 +189,39 @@ export class ProjectRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            boards: true,
+            tasks: {
+              where: {
+                deletedAt: null,
+              },
+            },
+            members: true,
+          },
+        },
+      },
     });
   }
 
-  async countAll(workspaceId?: number, userId?: number) {
+  async countAll(
+    workspaceId?: number,
+    userId?: number,
+    status?: ProjectStatus,
+  ) {
     return this.prisma.project.count({
       where: {
         deletedAt: null,
         ...(workspaceId && { workspaceId }),
+        ...(status && { status }),
         ...(userId && {
           OR: [
             { createdBy: userId },
@@ -115,6 +240,14 @@ export class ProjectRepository {
         deletedAt: null,
       },
       include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            ownerId: true,
+          },
+        },
         boards: {
           include: {
             columns: {
@@ -138,6 +271,9 @@ export class ProjectRepository {
               },
             },
           },
+          orderBy: {
+            createdAt: 'asc',
+          },
         },
         _count: {
           select: {
@@ -146,6 +282,8 @@ export class ProjectRepository {
                 deletedAt: null,
               },
             },
+            boards: true,
+            members: true,
           },
         },
       },

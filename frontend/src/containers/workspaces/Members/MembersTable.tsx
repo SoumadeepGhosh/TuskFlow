@@ -7,6 +7,7 @@ import { AddMemberDialog } from './AddMemberDialog';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { ChangeStatusDialog } from './ChangeStatusDialog';
 import { RemoveMemberDialog } from './RemoveMemberDialog';
+import { PendingInvitations } from './PendingInvitations';
 import {
   Table,
   TableBody,
@@ -85,7 +86,7 @@ export function MembersTable({ workspaceId }: MembersTableProps) {
 
         <Button onClick={() => setShowAddDialog(true)} size="sm" className="gap-2">
           <UserPlus className="h-4 w-4" />
-          Add Member
+          Invite Member
         </Button>
       </div>
 
@@ -124,7 +125,7 @@ export function MembersTable({ workspaceId }: MembersTableProps) {
           title="No members yet"
           description="Invite your teammates to join this workspace and begin assigning work."
           action={{
-            label: 'Add Member',
+            label: 'Invite Member',
             onClick: () => setShowAddDialog(true),
           }}
         />
@@ -268,6 +269,9 @@ export function MembersTable({ workspaceId }: MembersTableProps) {
           </Table>
         </div>
       )}
+
+      {/* Pending Workspace Invitations */}
+      <PendingInvitations workspaceId={workspaceId} />
 
       {/* Add Member Dialog */}
       <AddMemberDialog

@@ -6,6 +6,7 @@ import {
   AddProjectMemberDto,
   CreateProjectDto,
   ProjectRole,
+  ProjectStatus,
   UpdateProjectDto,
 } from '@/types/project';
 import { projectService } from '@/services/project.service';
@@ -13,8 +14,12 @@ import { projectService } from '@/services/project.service';
 export const PROJECT_KEYS = {
   all: ['projects'] as const,
   lists: () => [...PROJECT_KEYS.all, 'list'] as const,
-  list: (params?: { workspaceId?: number; page?: number; limit?: number }) =>
-    [...PROJECT_KEYS.lists(), params] as const,
+  list: (params?: {
+    workspaceId?: number;
+    status?: ProjectStatus;
+    page?: number;
+    limit?: number;
+  }) => [...PROJECT_KEYS.lists(), params] as const,
   details: () => [...PROJECT_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...PROJECT_KEYS.details(), id] as const,
   stats: (id: number) => [...PROJECT_KEYS.detail(id), 'statistics'] as const,
@@ -24,6 +29,7 @@ export const PROJECT_KEYS = {
 
 export function useProjects(params?: {
   workspaceId?: number;
+  status?: ProjectStatus;
   page?: number;
   limit?: number;
 }) {
@@ -127,7 +133,12 @@ export function useAddProjectMemberMutation(projectId: number) {
       projectService.addMember(projectId, data),
     onSuccess: () => {
       toast.success('Member added to project');
-      void queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.detail(projectId) });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.members(projectId),
+      });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -152,7 +163,12 @@ export function useUpdateProjectMemberRoleMutation(projectId: number) {
     }) => projectService.updateMemberRole(projectId, memberId, role),
     onSuccess: () => {
       toast.success('Project role updated');
-      void queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.detail(projectId) });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.members(projectId),
+      });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =
@@ -172,7 +188,12 @@ export function useRemoveProjectMemberMutation(projectId: number) {
       projectService.removeMember(projectId, memberId),
     onSuccess: () => {
       toast.success('Member removed from project');
-      void queryClient.invalidateQueries({ queryKey: PROJECT_KEYS.detail(projectId) });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.members(projectId),
+      });
     },
     onError: (error: AxiosError<ApiError>) => {
       const msg =

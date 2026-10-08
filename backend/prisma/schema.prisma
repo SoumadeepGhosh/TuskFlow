@@ -26,6 +26,7 @@ model User {
   assignedTasks    TaskAssignee[]
   ownedWorkspaces  Workspace[]
   workspaceMembers WorkspaceMember[]
+  invitationsSent  WorkspaceInvitation[] @relation("WorkspaceInvitationInvitedBy")
 }
 
 model RefreshToken {
@@ -53,6 +54,7 @@ model Workspace {
   projects    Project[]
   owner       User              @relation(fields: [ownerId], references: [id])
   invites     WorkspaceInvite[]
+  invitations WorkspaceInvitation[]
   members     WorkspaceMember[]
 }
 
@@ -84,6 +86,25 @@ model WorkspaceInvite {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceInvitation {
+  id          Int              @id @default(autoincrement())
+  workspaceId Int
+  email       String
+  role        WorkspaceRole    @default(MEMBER)
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  invitedBy   Int
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  inviter     User             @relation("WorkspaceInvitationInvitedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([email])
 }
 
 model Project {
@@ -324,4 +345,12 @@ enum NotificationType {
   TASK_ASSIGNED
   COMMENT_ADDED
   TASK_UPDATED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
 }

@@ -18,7 +18,7 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 import { ProjectService } from './project.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/request.dto';
-
+import { ProjectStatus } from '@prisma/client';
 import { ApiPagination } from 'src/common/decorators/api-pagination.decorator';
 
 @ApiTags('Projects')
@@ -63,6 +63,8 @@ export class ProjectController {
     limit?: number,
     @Query('workspaceId')
     workspaceId?: number,
+    @Query('status')
+    status?: ProjectStatus,
   ) {
     return this.projectService.findAll(
       workspaceId ? Number(workspaceId) : undefined,
@@ -70,6 +72,7 @@ export class ProjectController {
         page: Number(page) || 1,
         limit: Number(limit) || 10,
         workspaceId: workspaceId ? Number(workspaceId) : undefined,
+        status,
       },
       user,
     );
@@ -80,43 +83,55 @@ export class ProjectController {
   findAll(
     @Param('workspaceId', ParseIntPipe)
     workspaceId: number,
-
+    @CurrentUser()
+    user: JwtPayload,
     @Query('page')
     page?: number,
-
     @Query('limit')
     limit?: number,
+    @Query('status')
+    status?: ProjectStatus,
   ) {
-    return this.projectService.findAll(workspaceId, {
-      page: Number(page) || 1,
-      limit: Number(limit) || 10,
-    });
+    return this.projectService.findAll(
+      workspaceId,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        status,
+      },
+      user,
+    );
   }
 
   @Get('projects/:id')
   findOne(
     @Param('id', ParseIntPipe)
     id: number,
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.projectService.findOne(id);
+    return this.projectService.findOne(id, user);
   }
 
   @Patch('projects/:id')
   update(
     @Param('id', ParseIntPipe)
     id: number,
-
     @Body()
     dto: UpdateProjectDto,
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.projectService.update(id, dto);
+    return this.projectService.update(id, dto, user);
   }
 
   @Delete('projects/:id')
   remove(
     @Param('id', ParseIntPipe)
     id: number,
+    @CurrentUser()
+    user: JwtPayload,
   ) {
-    return this.projectService.remove(id);
+    return this.projectService.remove(id, user);
   }
 }

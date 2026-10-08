@@ -52,6 +52,7 @@ export class BoardController {
   @ApiPagination()
   @Get('boards')
   findAllBoards(
+    @CurrentUser() user: JwtPayload,
     @Query('projectId') projectId?: number,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -63,6 +64,7 @@ export class BoardController {
         limit: Number(limit) || 10,
         projectId: projectId ? Number(projectId) : undefined,
       } as BoardPaginationDto,
+      user,
     );
   }
 
@@ -71,21 +73,27 @@ export class BoardController {
   findAll(
     @Param('projectId', ParseIntPipe)
     projectId: number,
+    @CurrentUser() user: JwtPayload,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.boardService.findAll(projectId, {
-      page: Number(page) || 1,
-      limit: Number(limit) || 10,
-    } as BoardPaginationDto);
+    return this.boardService.findAll(
+      projectId,
+      {
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+      } as BoardPaginationDto,
+      user,
+    );
   }
 
   @Get('boards/:id')
   findOne(
     @Param('id', ParseIntPipe)
     id: number,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.boardService.findOne(id);
+    return this.boardService.findOne(id, user);
   }
 
   @Patch('boards/:id')
@@ -93,15 +101,17 @@ export class BoardController {
     @Param('id', ParseIntPipe)
     id: number,
     @Body() dto: UpdateBoardDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.boardService.update(id, dto);
+    return this.boardService.update(id, dto, user);
   }
 
   @Delete('boards/:id')
   remove(
     @Param('id', ParseIntPipe)
     id: number,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.boardService.remove(id);
+    return this.boardService.remove(id, user);
   }
 }
