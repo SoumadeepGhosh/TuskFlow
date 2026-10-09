@@ -16,6 +16,8 @@ export interface Board {
   projectId: number;
   name: string;
   description: string | null;
+  icon?: string | null;
+  coverUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   project?: Project;
@@ -29,11 +31,15 @@ export interface CreateBoardDto {
   projectId: number;
   name: string;
   description?: string;
+  icon?: string;
+  coverUrl?: string;
 }
 
 export interface UpdateBoardDto {
   name?: string;
   description?: string;
+  icon?: string | null;
+  coverUrl?: string | null;
 }
 
 export interface CreateColumnDto {

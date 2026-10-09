@@ -5,17 +5,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { useWorkspaces } from '@/features/workspace/hooks/use-workspaces';
+import { useUnreadCount } from '@/features/notification/hooks/use-notifications';
 import { CreateWorkspaceDialog } from '@/features/workspace/components/create-workspace-dialog';
 import { Workspace } from '@/types/workspace';
 import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/ui/user-avatar';
+import { getAssetUrl } from '@/lib/assets';
 import {
   Bell,
   Briefcase,
+  Calendar,
   ChevronDown,
   FolderKanban,
   Kanban,
   LogOut,
   Plus,
+  User as UserIcon,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,6 +31,8 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { data: workspacesData } = useWorkspaces({ limit: 10 });
+  const { data: unreadData } = useUnreadCount();
+  const unreadCount = unreadData?.unreadCount ?? 0;
   const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -55,10 +62,22 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
       active: pathname.startsWith('/boards'),
     },
     {
+      label: 'Calendar',
+      href: '/calendar',
+      icon: Calendar,
+      active: pathname.startsWith('/calendar'),
+    },
+    {
       label: 'Notifications',
       href: '/notifications',
       icon: Bell,
       active: pathname.startsWith('/notifications'),
+    },
+    {
+      label: 'Profile',
+      href: '/profile',
+      icon: UserIcon,
+      active: pathname.startsWith('/profile'),
     },
   ];
 
@@ -89,11 +108,19 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
               className="w-full flex items-center justify-between p-2 rounded-[12px] bg-secondary/60 hover:bg-secondary text-left transition-colors"
             >
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="h-7 w-7 rounded-[8px] bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                  {activeWorkspace
-                    ? activeWorkspace.name.substring(0, 2).toUpperCase()
-                    : 'TF'}
-                </div>
+                {activeWorkspace?.logoUrl ? (
+                  <img
+                    src={getAssetUrl(activeWorkspace.logoUrl)}
+                    alt={activeWorkspace.name}
+                    className="h-7 w-7 rounded-[8px] object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <div className="h-7 w-7 rounded-[8px] bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                    {activeWorkspace
+                      ? activeWorkspace.name.substring(0, 2).toUpperCase()
+                      : 'TF'}
+                  </div>
+                )}
                 <div className="truncate">
                   <p className="text-xs font-semibold text-foreground truncate">
                     {activeWorkspace?.name ?? 'Select Workspace'}
@@ -127,7 +154,20 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
                       }}
                       className="flex items-center justify-between px-2.5 py-1.5 rounded-[10px] text-xs font-medium text-foreground hover:bg-secondary transition-colors"
                     >
-                      <span className="truncate">{ws.name}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        {ws.logoUrl ? (
+                          <img
+                            src={getAssetUrl(ws.logoUrl)}
+                            alt={ws.name}
+                            className="h-5 w-5 rounded-[6px] object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-5 w-5 rounded-[6px] bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {ws.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="truncate">{ws.name}</span>
+                      </div>
                       {ws.id === activeWorkspace?.id && (
                         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                       )}
@@ -167,7 +207,12 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.href === '/notifications' && unreadCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-primary text-primary-foreground">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -177,19 +222,28 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         {/* User Profile Footer */}
         <div className="p-3 border-t border-border">
           <div className="flex items-center justify-between p-2 rounded-[12px] hover:bg-secondary/60 transition-colors">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="h-8 w-8 rounded-full bg-accent text-primary font-semibold text-xs flex items-center justify-center shrink-0">
-                {user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
-              </div>
+            <Link
+              href="/profile"
+              onClick={onCloseMobile}
+              className="flex items-center gap-2.5 overflow-hidden flex-1 group cursor-pointer"
+              title="View your profile"
+            >
+              <UserAvatar
+                user={user}
+                size="md"
+                showStatus
+                status="online"
+                className="group-hover:ring-2 group-hover:ring-primary/30 transition-all shrink-0"
+              />
               <div className="truncate">
-                <p className="text-xs font-semibold text-foreground truncate">
+                <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                   {user?.name ?? 'User'}
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate">
                   {user?.email}
                 </p>
               </div>
-            </div>
+            </Link>
 
             <Button
               variant="ghost"

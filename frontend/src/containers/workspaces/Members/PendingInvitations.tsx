@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Mail, RotateCcw, Trash2, Clock } from 'lucide-react';
 
 interface PendingInvitationsProps {
@@ -195,10 +196,15 @@ export function PendingInvitations({ workspaceId }: PendingInvitationsProps) {
                     </Badge>
                   </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground truncate max-w-[150px]">
-                    {invitation.inviter?.name ||
-                      invitation.inviter?.email ||
-                      'Administrator'}
+                  <TableCell className="text-xs text-muted-foreground truncate max-w-[180px]">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <UserAvatar user={invitation.inviter} size="xs" />
+                      <span className="truncate">
+                        {invitation.inviter?.name ||
+                          invitation.inviter?.email ||
+                          'Administrator'}
+                      </span>
+                    </div>
                   </TableCell>
 
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">

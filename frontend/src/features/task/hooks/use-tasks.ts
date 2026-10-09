@@ -10,6 +10,18 @@ import {
 } from '@/types/task';
 import { toast } from 'sonner';
 
+export function useTasks(params?: {
+  columnId?: number;
+  projectId?: number;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['tasks', 'list', params],
+    queryFn: () => taskService.getTasks(params),
+  });
+}
+
 export function useTask(id: number, enabled = true) {
   return useQuery({
     queryKey: ['tasks', id],

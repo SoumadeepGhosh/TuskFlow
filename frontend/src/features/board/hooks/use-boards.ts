@@ -171,3 +171,47 @@ export function useDeleteColumnMutation(boardId: number) {
 export const useCreateColumn = useCreateColumnMutation;
 export const useUpdateColumn = useUpdateColumnMutation;
 export const useDeleteColumn = useDeleteColumnMutation;
+
+export function useUploadBoardCoverMutation(boardId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => boardService.uploadCover(boardId, file),
+    onSuccess: () => {
+      toast.success('Board cover updated');
+      void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.detail(boardId) });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to upload board cover';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useRemoveBoardCoverMutation(boardId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => boardService.removeCover(boardId),
+    onSuccess: () => {
+      toast.success('Board cover removed');
+      void queryClient.invalidateQueries({ queryKey: BOARD_KEYS.detail(boardId) });
+      void queryClient.invalidateQueries({ queryKey: ['boards'] });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to remove board cover';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export const useUploadBoardCover = useUploadBoardCoverMutation;
+export const useRemoveBoardCover = useRemoveBoardCoverMutation;
+

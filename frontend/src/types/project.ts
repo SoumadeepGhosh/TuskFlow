@@ -45,6 +45,8 @@ export interface Project {
   status: ProjectStatus;
   color?: string | null;
   icon?: string | null;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   createdAt: string;
@@ -65,6 +67,8 @@ export interface CreateProjectDto {
   description?: string;
   icon?: string;
   color?: string;
+  logoUrl?: string;
+  coverUrl?: string;
   status?: ProjectStatus;
   startDate?: string;
   endDate?: string;
@@ -76,6 +80,8 @@ export interface UpdateProjectDto {
   description?: string;
   status?: ProjectStatus;
   color?: string;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
 }
 
 export interface AddProjectMemberDto {

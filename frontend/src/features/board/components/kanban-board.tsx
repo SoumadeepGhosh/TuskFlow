@@ -20,7 +20,7 @@ import { KanbanColumn } from './kanban-column';
 import { TaskCard } from '@/features/task/components/task-card';
 import { Button } from '@/components/ui/button';
 import { Plus, Kanban } from 'lucide-react';
-import { useMoveTask } from '@/features/task/hooks/use-tasks';
+import { useMoveTask, useDeleteTask } from '@/features/task/hooks/use-tasks';
 import {
   useCreateColumn,
   useUpdateColumn,
@@ -41,6 +41,11 @@ interface KanbanBoardProps {
   onAddTask: (columnId: number) => void;
   isAddColumnOpen?: boolean;
   onOpenAddColumnChange?: (open: boolean) => void;
+  filterSearch?: string;
+  filterPriority?: string;
+  filterStatus?: string;
+  filterAssigneeId?: number;
+  filterLabelId?: number;
 }
 
 export function KanbanBoard({
@@ -49,6 +54,11 @@ export function KanbanBoard({
   onAddTask,
   isAddColumnOpen: externalAddColumnOpen,
   onOpenAddColumnChange,
+  filterSearch = '',
+  filterPriority = 'ALL',
+  filterStatus = 'ALL',
+  filterAssigneeId,
+  filterLabelId,
 }: KanbanBoardProps) {
   // Local state for optimistic drag-and-drop
   const [columns, setColumns] = useState<BoardColumn[]>(board.columns || []);
@@ -84,6 +94,7 @@ export function KanbanBoard({
   const createColumnMutation = useCreateColumn(board.id);
   const updateColumnMutation = useUpdateColumn(board.id);
   const deleteColumnMutation = useDeleteColumn(board.id);
+  const deleteTaskMutation = useDeleteTask(board.id);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -180,7 +191,6 @@ export function KanbanBoard({
         col.tasks?.some((t) => t.id === activeId),
       );
 
-      // If dragOver didn't move it yet (e.g. dropped directly on empty column), resolve target
       if (!targetColumn) {
         targetColumn = currentCols.find((col) => col.id === overId);
       }
@@ -220,7 +230,6 @@ export function KanbanBoard({
         },
         {
           onError: () => {
-            // Roll back to previous snapshot on failure
             setColumns(previousColumnsRef.current);
           },
         },
@@ -253,6 +262,57 @@ export function KanbanBoard({
     );
   };
 
+  const moveColumnPosition = (index: number, direction: 'left' | 'right') => {
+    const newIndex = direction === 'left' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= columns.length) return;
+
+    const reordered = arrayMove(columns, index, newIndex);
+    setColumns(reordered);
+    // Optimistically reorder and update position of moved column
+    const movedCol = reordered[newIndex];
+    if (movedCol) {
+      updateColumnMutation.mutate({
+        id: movedCol.id,
+        data: { position: newIndex + 1 },
+      });
+    }
+  };
+
+  // Filter tasks per column based on active header search & filters
+  const getFilteredColumnTasks = (tasks: Task[] = []) => {
+    return tasks.filter((t) => {
+      // Search filter
+      if (filterSearch) {
+        const query = filterSearch.toLowerCase();
+        const matchesTitle = t.title.toLowerCase().includes(query);
+        const matchesDesc = t.description?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDesc) return false;
+      }
+
+      // Priority filter
+      if (filterPriority !== 'ALL' && t.priority !== filterPriority) {
+        return false;
+      }
+
+      // Status filter
+      if (filterStatus !== 'ALL' && t.status !== filterStatus) {
+        return false;
+      }
+
+      // Assignee filter
+      if (filterAssigneeId && !t.assignees?.some((a) => a.userId === filterAssigneeId)) {
+        return false;
+      }
+
+      // Label filter
+      if (filterLabelId && !t.labels?.some((l) => l.labelId === filterLabelId)) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
   return (
     <div className="h-full flex flex-col">
       <DndContext
@@ -262,63 +322,77 @@ export function KanbanBoard({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex-1 flex gap-5 overflow-x-auto pb-6 items-start">
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              tasks={column.tasks || []}
-              onTaskClick={onTaskClick}
-              onAddTask={onAddTask}
-              onUpdateColumn={(columnId, name) => {
-                setColumns((prev) =>
-                  prev.map((c) => (c.id === columnId ? { ...c, name } : c)),
-                );
-                updateColumnMutation.mutate({ id: columnId, data: { name } });
-              }}
-              onDeleteColumn={(columnId) => {
-                deleteColumnMutation.mutate(columnId, {
-                  onSuccess: () => {
-                    setColumns((prev) => prev.filter((c) => c.id !== columnId));
-                  },
-                });
-              }}
-            />
-          ))}
+        <div className="flex-1 flex gap-4 overflow-x-auto p-4 lg:p-6 pb-6 items-stretch scrollbar-thin select-none">
+          {columns.map((column, index) => {
+            const filteredTasks = getFilteredColumnTasks(column.tasks || []);
 
+            return (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                tasks={filteredTasks}
+                boardId={board.id}
+                projectId={board.projectId}
+                onTaskClick={onTaskClick}
+                onAddTask={onAddTask}
+                onDeleteTask={(taskId) => {
+                  deleteTaskMutation.mutate(taskId);
+                }}
+                onUpdateColumn={(columnId, name) => {
+                  setColumns((prev) =>
+                    prev.map((c) => (c.id === columnId ? { ...c, name } : c)),
+                  );
+                  updateColumnMutation.mutate({ id: columnId, data: { name } });
+                }}
+                onDeleteColumn={(columnId) => {
+                  deleteColumnMutation.mutate(columnId, {
+                    onSuccess: () => {
+                      setColumns((prev) => prev.filter((c) => c.id !== columnId));
+                    },
+                  });
+                }}
+                onMoveColumnLeft={() => moveColumnPosition(index, 'left')}
+                onMoveColumnRight={() => moveColumnPosition(index, 'right')}
+                canMoveLeft={index > 0}
+                canMoveRight={index < columns.length - 1}
+              />
+            );
+          })}
+
+          {/* Empty Board State */}
           {columns.length === 0 && (
-            <div className="w-80 shrink-0 p-8 rounded-2xl border-2 border-dashed border-border/80 bg-card/60 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="w-80 shrink-0 p-8 rounded-2xl border-2 border-dashed border-border/70 bg-card/40 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-xs">
                 <Kanban className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-semibold text-sm text-foreground">
                   No columns on this board
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                  Add your first column like &ldquo;To Do&rdquo; or &ldquo;Backlog&rdquo; to start tracking tasks.
+                <p className="text-xs text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
+                  Add columns like &ldquo;To Do&rdquo; or &ldquo;In Progress&rdquo; to visualize your work.
                 </p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setAddColumnOpen(true)}
-                className="gap-1.5 mt-2"
+                className="gap-1.5 mt-2 rounded-xl"
               >
                 <Plus className="w-3.5 h-3.5" /> Create Column
               </Button>
             </div>
           )}
 
-          {/* New Column Button */}
+          {/* Add Column Floating Card Button */}
           {columns.length > 0 && (
-            <div className="w-80 shrink-0">
-              <Button
-                variant="outline"
+            <div className="w-[300px] shrink-0">
+              <button
+                type="button"
                 onClick={() => setAddColumnOpen(true)}
-                className="w-full h-12 rounded-2xl border-2 border-dashed border-border/80 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all font-medium"
+                className="w-full h-11 rounded-2xl border border-dashed border-border/70 hover:border-primary/50 hover:bg-muted/40 text-muted-foreground hover:text-primary transition-all font-medium text-xs flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
               >
-                <Plus className="w-4 h-4 mr-2" /> Add Column
-              </Button>
+                <Plus className="w-4 h-4" /> Add Column
+              </button>
             </div>
           )}
         </div>
@@ -345,7 +419,7 @@ export function KanbanBoard({
             <Input
               value={newColumnName}
               onChange={(e) => setNewColumnName(e.target.value)}
-              placeholder="e.g. In Progress, Review, Done"
+              placeholder="e.g. In Progress, Review, Shipped"
               disabled={createColumnMutation.isPending}
               autoFocus
               required

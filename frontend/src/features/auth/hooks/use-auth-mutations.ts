@@ -50,3 +50,71 @@ export function useRegisterMutation() {
     },
   });
 }
+
+export function useUpdateProfileMutation() {
+  const { refreshProfile } = useAuth();
+
+  return useMutation({
+    mutationFn: (data: { name?: string; avatarUrl?: string }) =>
+      authService.updateProfile(data),
+    onSuccess: async () => {
+      await refreshProfile();
+      toast.success('Profile details updated');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message || error.message || 'Failed to update profile';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}
+
+export function useUploadAvatarMutation() {
+  const { refreshProfile } = useAuth();
+
+  return useMutation({
+    mutationFn: (file: File) => authService.uploadAvatar(file),
+    onSuccess: async () => {
+      await refreshProfile();
+      toast.success('Avatar updated successfully');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message || error.message || 'Failed to upload avatar';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}
+
+export function useRemoveAvatarMutation() {
+  const { refreshProfile } = useAuth();
+
+  return useMutation({
+    mutationFn: () => authService.removeAvatar(),
+    onSuccess: async () => {
+      await refreshProfile();
+      toast.success('Avatar removed successfully');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message || error.message || 'Failed to remove avatar';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}
+
+export function useChangePasswordMutation() {
+  return useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      authService.changePassword(data),
+    onSuccess: () => {
+      toast.success('Password updated successfully');
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const message =
+        error.response?.data?.message || error.message || 'Failed to update password';
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    },
+  });
+}
+

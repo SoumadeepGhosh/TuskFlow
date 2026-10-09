@@ -205,3 +205,105 @@ export function useRemoveProjectMemberMutation(projectId: number) {
   });
 }
 
+export function useUploadProjectLogoMutation(projectId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => projectService.uploadLogo(projectId, file),
+    onSuccess: () => {
+      toast.success('Project logo updated');
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to upload project logo';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useRemoveProjectLogoMutation(projectId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => projectService.removeLogo(projectId),
+    onSuccess: () => {
+      toast.success('Project logo removed');
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to remove project logo';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useUploadProjectCoverMutation(projectId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => projectService.uploadCover(projectId, file),
+    onSuccess: () => {
+      toast.success('Project cover banner updated');
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to upload project cover banner';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useRemoveProjectCoverMutation(projectId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => projectService.removeCover(projectId),
+    onSuccess: () => {
+      toast.success('Project cover banner removed');
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.detail(projectId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: PROJECT_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to remove project cover banner';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export const useUploadProjectLogo = useUploadProjectLogoMutation;
+export const useRemoveProjectLogo = useRemoveProjectLogoMutation;
+export const useUploadProjectCover = useUploadProjectCoverMutation;
+export const useRemoveProjectCover = useRemoveProjectCoverMutation;
+
+

@@ -42,7 +42,7 @@ export function Dialog({ open, onOpenChange, children, className }: DialogProps)
       {/* Dialog content */}
       <div
         className={cn(
-          'relative z-50 w-full max-w-lg overflow-hidden rounded-[24px] border border-border bg-card p-6 sm:p-8 shadow-2xl transition-all',
+          'relative z-50 w-full max-w-lg max-h-[90vh] flex flex-col rounded-[24px] border border-border bg-card p-6 sm:p-7 shadow-2xl transition-all overflow-hidden',
           className,
         )}
       >
@@ -62,7 +62,7 @@ export function DialogHeader({
   onClose?: () => void;
 }) {
   return (
-    <div className={cn('flex items-start justify-between pb-4 mb-4 border-b border-border', className)}>
+    <div className={cn('flex items-start justify-between pb-3.5 mb-2 border-b border-border shrink-0', className)}>
       <div className="space-y-1">{children}</div>
       {onClose && (
         <button
@@ -113,7 +113,7 @@ export function DialogFooter({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('flex items-center justify-end gap-2.5 pt-4 mt-6 border-t border-border', className)}>
+    <div className={cn('flex items-center justify-end gap-2.5 pt-3 mt-4 border-t border-border shrink-0', className)}>
       {children}
     </div>
   );

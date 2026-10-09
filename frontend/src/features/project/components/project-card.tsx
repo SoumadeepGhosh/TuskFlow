@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useDeleteProjectMutation } from '../hooks/use-projects';
+import { getAssetUrl } from '@/lib/assets';
 import {
   ArrowRight,
   CheckSquare,
@@ -65,18 +66,44 @@ export function ProjectCard({ project }: ProjectCardProps) {
         tabIndex={0}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
-        className="group relative flex flex-col justify-between rounded-[20px] border border-border bg-card p-6 shadow-soft hover:shadow-soft-hover hover:border-primary/50 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 text-left"
+        className="group relative flex flex-col justify-between rounded-[20px] border border-border bg-card shadow-soft hover:shadow-soft-hover hover:border-primary/50 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 text-left overflow-hidden"
       >
-        <div>
-          {/* Card Header */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-2xl text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform shrink-0"
-                style={{ backgroundColor: color }}
-              >
-                {project.name.substring(0, 2).toUpperCase()}
-              </div>
+        {/* Cover banner if present */}
+        {project.coverUrl ? (
+          <div className="h-20 w-full relative overflow-hidden bg-muted">
+            <img
+              src={getAssetUrl(project.coverUrl)}
+              alt={project.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
+          </div>
+        ) : (
+          <div
+            className="h-2.5 w-full shrink-0"
+            style={{ backgroundColor: color }}
+          />
+        )}
+
+        <div className="p-6 flex-1 flex flex-col justify-between">
+          <div>
+            {/* Card Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform shrink-0 overflow-hidden"
+                  style={{ backgroundColor: color }}
+                >
+                  {project.logoUrl ? (
+                    <img
+                      src={getAssetUrl(project.logoUrl)}
+                      alt={project.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    project.name.substring(0, 2).toUpperCase()
+                  )}
+                </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -193,6 +220,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </Link>
         </div>
       </div>
+    </div>
 
       <ConfirmDialog
         open={showDeleteConfirm}

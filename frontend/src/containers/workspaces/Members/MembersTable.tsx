@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   MoreHorizontal,
   Shield,
@@ -160,18 +161,7 @@ export function MembersTable({ workspaceId }: MembersTableProps) {
                   <TableRow key={member.id} className="group">
                     {/* Avatar */}
                     <TableCell>
-                      <div className="h-8 w-8 rounded-full bg-accent text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-primary/20">
-                        {member.user?.avatarUrl || member.user?.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={(member.user.avatarUrl || member.user.avatar)!}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          userInitials
-                        )}
-                      </div>
+                      <UserAvatar user={member.user} size="sm" />
                     </TableCell>
 
                     {/* Name */}

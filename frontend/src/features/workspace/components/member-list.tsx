@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Trash2, Users } from 'lucide-react';
 
 interface MemberListProps {
@@ -89,11 +90,7 @@ export function MemberList({
             >
               {/* User Profile Info */}
               <div className="flex items-center gap-3.5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent font-semibold text-primary text-sm">
-                  {member.user?.name
-                    ? member.user.name.substring(0, 2).toUpperCase()
-                    : 'U'}
-                </div>
+                <UserAvatar user={member.user} size="lg" />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground text-sm">

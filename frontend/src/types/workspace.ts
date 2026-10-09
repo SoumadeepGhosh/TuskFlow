@@ -21,6 +21,7 @@ export interface Workspace {
   slug: string;
   description: string | null;
   logoUrl: string | null;
+  coverUrl?: string | null;
   ownerId: number;
   createdAt: string;
   updatedAt: string;
@@ -36,13 +37,15 @@ export interface Workspace {
 export interface CreateWorkspaceDto {
   name: string;
   description?: string;
-  avatar?: string;
+  logoUrl?: string;
+  coverUrl?: string;
 }
 
 export interface UpdateWorkspaceDto {
   name?: string;
   description?: string;
-  avatar?: string;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
 }
 
 export interface AddMemberDto {

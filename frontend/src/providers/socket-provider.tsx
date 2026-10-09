@@ -7,6 +7,8 @@ import { tokenStorage } from '@/lib/tokens';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { Notification } from '@/types/notification';
+import { playNotificationSound } from '@/lib/notification-sound';
+import { showBrowserNotification } from '@/lib/browser-notification';
 
 interface SocketContextValue {
   socket: Socket | null;
@@ -54,11 +56,35 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     // Realtime notification event
     newSocket.on('notification', (payload: Notification) => {
+      // 1. Play pleasant audio chime
+      try {
+        playNotificationSound();
+      } catch {
+        // audio playback restricted
+      }
+
+      // 2. Desktop notification if tab is in background
+      try {
+        if (typeof document !== 'undefined' && document.hidden) {
+          showBrowserNotification(payload.title || 'TaskFlow Notification', {
+            body: payload.message,
+            onClick: () => {
+              if (payload.actionUrl) {
+                window.location.href = payload.actionUrl;
+              }
+            },
+          });
+        }
+      } catch {
+        // desktop notification fallback
+      }
+
+      // 3. In-app toast
       toast(payload.title || 'New Notification', {
         description: payload.message,
       });
 
-      // Automatically invalidate queries so UI updates immediately without manual reload
+      // 4. Automatically invalidate queries so UI updates immediately without manual reload
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
     });
 

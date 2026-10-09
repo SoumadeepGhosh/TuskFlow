@@ -177,3 +177,100 @@ export function useRemoveMemberMutation(workspaceId: number) {
     },
   });
 }
+
+export function useUploadWorkspaceLogoMutation(workspaceId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => workspaceService.uploadLogo(workspaceId, file),
+    onSuccess: () => {
+      toast.success('Workspace logo updated');
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.detail(workspaceId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to upload workspace logo';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useRemoveWorkspaceLogoMutation(workspaceId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => workspaceService.removeLogo(workspaceId),
+    onSuccess: () => {
+      toast.success('Workspace logo removed');
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.detail(workspaceId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to remove workspace logo';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useUploadWorkspaceCoverMutation(workspaceId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => workspaceService.uploadCover(workspaceId, file),
+    onSuccess: () => {
+      toast.success('Workspace cover updated');
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.detail(workspaceId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to upload workspace cover';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+
+export function useRemoveWorkspaceCoverMutation(workspaceId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => workspaceService.removeCover(workspaceId),
+    onSuccess: () => {
+      toast.success('Workspace cover removed');
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.detail(workspaceId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: WORKSPACE_KEYS.lists(),
+      });
+    },
+    onError: (error: AxiosError<ApiError>) => {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to remove workspace cover';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
+  });
+}
+

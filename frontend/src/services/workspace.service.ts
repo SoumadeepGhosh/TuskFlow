@@ -203,4 +203,70 @@ export const workspaceService = {
   async declineInvitation(token: string): Promise<{ message?: string }> {
     return apiClient.post(`/invitations/${token}/decline`);
   },
+
+  async uploadLogo(
+    id: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<Workspace> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await apiClient.post<
+      unknown,
+      { data?: Workspace } & Workspace
+    >(`/workspaces/${id}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          onProgress(percent);
+        }
+      },
+    });
+    return (res?.data ?? res) as Workspace;
+  },
+
+  async removeLogo(id: number): Promise<Workspace> {
+    const res = await apiClient.delete<
+      unknown,
+      { data?: Workspace } & Workspace
+    >(`/workspaces/${id}/logo`);
+    return (res?.data ?? res) as Workspace;
+  },
+
+  async uploadCover(
+    id: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<Workspace> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await apiClient.post<
+      unknown,
+      { data?: Workspace } & Workspace
+    >(`/workspaces/${id}/cover`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          onProgress(percent);
+        }
+      },
+    });
+    return (res?.data ?? res) as Workspace;
+  },
+
+  async removeCover(id: number): Promise<Workspace> {
+    const res = await apiClient.delete<
+      unknown,
+      { data?: Workspace } & Workspace
+    >(`/workspaces/${id}/cover`);
+    return (res?.data ?? res) as Workspace;
+  },
 };

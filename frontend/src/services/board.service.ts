@@ -114,5 +114,38 @@ export const boardService = {
   async deleteColumn(id: number): Promise<{ message?: string }> {
     return apiClient.delete(`/columns/${id}`);
   },
+
+  async uploadCover(
+    id: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<Board> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await apiClient.post<unknown, { data?: Board } & Board>(
+      `/boards/${id}/cover`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && onProgress) {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
+            onProgress(percent);
+          }
+        },
+      },
+    );
+    return (res?.data ?? res) as Board;
+  },
+
+  async removeCover(id: number): Promise<Board> {
+    const res = await apiClient.delete<unknown, { data?: Board } & Board>(
+      `/boards/${id}/cover`,
+    );
+    return (res?.data ?? res) as Board;
+  },
 };
 
