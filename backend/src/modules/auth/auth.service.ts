@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,14 +7,17 @@ import {
 } from '@nestjs/common';
 
 import {
+  ChangePasswordDto,
   LoginDto,
   LogoutDto,
   RefreshTokenDto,
   RegisterDto,
+  UpdateProfileDto,
 } from './dto/request.dto';
 import { AuthRepository } from './repositories/auth.repository';
 import { PasswordService } from '../../common/password/password.service';
 import { TokenService } from 'src/common/token/token.service';
+import { StorageService } from '../../common/storage/storage.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -24,6 +26,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
+    private readonly storageService: StorageService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -207,4 +210,105 @@ export class AuthService {
       message: 'Logged out from all devices successfully',
     };
   }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updated = await this.authRepository.updateUser(userId, {
+      ...(dto.name && { name: dto.name }),
+      ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+    });
+
+    const { passwordHash: _, ...safeUser } = updated;
+    return safeUser;
+  }
+
+  async uploadAvatar(userId: number, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Avatar file is required');
+    }
+
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/svg+xml',
+      'image/gif',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPG, PNG, WEBP, and SVG are supported.',
+      );
+    }
+
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete old avatar if present
+    if (user.avatarUrl) {
+      const storageKey = user.avatarUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'avatars');
+    const updated = await this.authRepository.updateUser(userId, {
+      avatarUrl: saved.fileUrl,
+    });
+
+    const { passwordHash: _, ...safeUser } = updated;
+    return {
+      avatarUrl: saved.fileUrl,
+      user: safeUser,
+    };
+  }
+
+  async removeAvatar(userId: number) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.avatarUrl) {
+      const storageKey = user.avatarUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const updated = await this.authRepository.updateUser(userId, {
+      avatarUrl: null,
+    });
+
+    const { passwordHash: _, ...safeUser } = updated;
+    return {
+      avatarUrl: null,
+      user: safeUser,
+    };
+  }
+
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isMatch = await this.passwordService.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!isMatch) {
+      throw new BadRequestException('Current password does not match');
+    }
+
+    const newHash = await this.passwordService.hash(dto.newPassword);
+    await this.authRepository.updateUser(userId, { passwordHash: newHash });
+
+    return {
+      message: 'Password changed successfully',
+    };
+  }
 }
+

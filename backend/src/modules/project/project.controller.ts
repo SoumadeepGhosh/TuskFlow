@@ -8,9 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -125,6 +128,80 @@ export class ProjectController {
     return this.projectService.update(id, dto, user);
   }
 
+  @Post('projects/:id/logo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  uploadLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectService.uploadLogo(id, file, user);
+  }
+
+  @Delete('projects/:id/logo')
+  removeLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectService.removeLogo(id, user);
+  }
+
+  @Post('projects/:id/cover')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  uploadCover(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectService.uploadCover(id, file, user);
+  }
+
+  @Delete('projects/:id/cover')
+  removeCover(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectService.removeCover(id, user);
+  }
+
   @Delete('projects/:id')
   remove(
     @Param('id', ParseIntPipe)
@@ -135,3 +212,4 @@ export class ProjectController {
     return this.projectService.remove(id, user);
   }
 }
+

@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -66,6 +67,8 @@ export class WorkspaceInvitationService {
     return workspace;
   }
 
+  private readonly logger = new Logger(WorkspaceInvitationService.name);
+
   async inviteMember(
     workspaceId: number,
     dto: InviteMemberDto,
@@ -90,51 +93,58 @@ export class WorkspaceInvitationService {
       );
     }
 
-    // 2. Prevent duplicate active pending invitations
+    // 2. Check if a pending invitation already exists for this email
     const pendingInvitation =
       await this.invitationRepository.findPendingInvitation(workspaceId, email);
 
-    if (pendingInvitation) {
-      if (pendingInvitation.expiresAt > new Date()) {
-        throw new ConflictException(
-          'An active pending invitation has already been sent to this email',
-        );
-      } else {
-        // Mark stale invitation as expired
-        await this.invitationRepository.updateInvitation(pendingInvitation.id, {
-          status: InvitationStatus.EXPIRED,
-        });
-      }
-    }
-
-    // 3. Generate cryptographically secure token & expiration
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = this.getInvitationExpiration();
 
-    // 4. Save invitation
-    const invitation = await this.invitationRepository.createInvitation({
-      workspaceId,
-      email,
-      role,
-      token,
-      invitedBy: currentUser.sub,
-      expiresAt,
-    });
+    let invitation;
 
-    // 5. Send invitation email
+    if (pendingInvitation) {
+      // Refresh the existing pending invitation with a new token and extended expiration
+      invitation = await this.invitationRepository.updateInvitation(
+        pendingInvitation.id,
+        {
+          token,
+          expiresAt,
+          role,
+          status: InvitationStatus.PENDING,
+        },
+      );
+    } else {
+      // Create a new invitation record
+      invitation = await this.invitationRepository.createInvitation({
+        workspaceId,
+        email,
+        role,
+        token,
+        invitedBy: currentUser.sub,
+        expiresAt,
+      });
+    }
+
+    // 3. Send invitation email asynchronously so SMTP issues never block or fail the API
     const inviterUser = await this.invitationRepository.findUserById(
       currentUser.sub,
     );
     const inviteUrl = `${this.getFrontendUrl()}/invite/${token}`;
 
-    await this.emailService.sendWorkspaceInvitationEmail({
-      recipientEmail: email,
-      workspaceName: workspace.name,
-      inviterName: inviterUser?.name || currentUser.email,
-      role,
-      inviteUrl,
-      expiresAt,
-    });
+    this.emailService
+      .sendWorkspaceInvitationEmail({
+        recipientEmail: email,
+        workspaceName: workspace.name,
+        inviterName: inviterUser?.name || currentUser.email,
+        role,
+        inviteUrl,
+        expiresAt,
+      })
+      .catch((err: Error) => {
+        this.logger.error(
+          `Failed to send workspace invitation email to ${email}: ${err.message}`,
+        );
+      });
 
     return invitation;
   }

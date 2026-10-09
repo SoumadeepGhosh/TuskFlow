@@ -65,3 +65,38 @@ export class LogoutDto {
   @IsNotEmpty()
   refreshToken!: string;
 }
+
+export class UpdateProfileDto {
+  @ApiProperty({
+    required: false,
+    example: 'John Doe',
+  })
+  @IsString()
+  @MaxLength(100)
+  name?: string;
+
+  @ApiProperty({
+    required: false,
+    example: '/uploads/avatars/user.png',
+  })
+  @IsString()
+  avatarUrl?: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({
+    example: 'OldPassword@123',
+  })
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+
+  @ApiProperty({
+    example: 'NewPassword@123',
+  })
+  @IsString()
+  @MinLength(6)
+  @MaxLength(100)
+  newPassword!: string;
+}
+

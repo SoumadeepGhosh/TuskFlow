@@ -85,4 +85,12 @@ export class AuthRepository {
       },
     });
   }
+
+  async updateUser(id: number, data: Partial<User>): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
 }
+

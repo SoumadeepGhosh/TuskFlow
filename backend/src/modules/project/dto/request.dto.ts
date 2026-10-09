@@ -109,6 +109,22 @@ export class CreateProjectDto {
   color?: string;
 
   @ApiProperty({
+    required: false,
+    example: '/uploads/projects/logo.png',
+  })
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @ApiProperty({
+    required: false,
+    example: '/uploads/projects/cover.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  coverUrl?: string;
+
+  @ApiProperty({
     enum: ProjectStatus,
     example: ProjectStatus.ACTIVE,
   })

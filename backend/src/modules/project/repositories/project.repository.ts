@@ -55,6 +55,8 @@ export class ProjectRepository {
     description?: string;
     icon?: string;
     color?: string;
+    logoUrl?: string;
+    coverUrl?: string;
     status: ProjectStatus;
     startDate?: Date;
     endDate?: Date;
@@ -298,6 +300,8 @@ export class ProjectRepository {
       description?: string;
       icon?: string;
       color?: string;
+      logoUrl?: string | null;
+      coverUrl?: string | null;
       status?: ProjectStatus;
       startDate?: Date;
       endDate?: Date;

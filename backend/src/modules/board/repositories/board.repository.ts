@@ -9,6 +9,8 @@ export class BoardRepository {
     projectId: number;
     name: string;
     description?: string;
+    icon?: string;
+    coverUrl?: string;
     position: number;
     createdBy: number;
   }) {
@@ -207,6 +209,8 @@ export class BoardRepository {
     data: {
       name?: string;
       description?: string;
+      icon?: string | null;
+      coverUrl?: string | null;
       position?: number;
     },
   ) {

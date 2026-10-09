@@ -9,6 +9,8 @@ export class WorkspaceRepository {
     name: string;
     slug: string;
     description?: string;
+    logoUrl?: string;
+    coverUrl?: string;
     ownerId: number;
   }) {
     return this.prisma.workspace.create({
@@ -96,6 +98,8 @@ export class WorkspaceRepository {
       name?: string;
       description?: string;
       slug?: string;
+      logoUrl?: string | null;
+      coverUrl?: string | null;
     },
   ) {
     return this.prisma.workspace.update({

@@ -71,6 +71,23 @@ export class CreateBoardDto {
   @MaxLength(500)
   description?: string;
 
+  @ApiProperty({
+    required: false,
+    example: '📋',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  icon?: string;
+
+  @ApiProperty({
+    required: false,
+    example: '/uploads/boards/cover.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  coverUrl?: string;
+
   @ApiPropertyOptional({
     example: 1,
     description: 'Board position inside the project (auto-assigned if omitted)',

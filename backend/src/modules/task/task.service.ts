@@ -17,11 +17,56 @@ import {
 
 import { TaskRepository } from './repositories/task.repository';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { TaskPriority, TaskStatus } from '@prisma/client';
+import { NotificationType, TaskPriority, TaskStatus } from '@prisma/client';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly taskRepository: TaskRepository) {}
+  constructor(
+    private readonly taskRepository: TaskRepository,
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  private notifyTaskStakeholders(
+    task: any,
+    actorId: number | undefined,
+    type: NotificationType,
+    title: string,
+    message: string,
+  ) {
+    try {
+      const recipientIds = new Set<number>();
+      if (task.reporterId && task.reporterId !== actorId) {
+        recipientIds.add(task.reporterId);
+      }
+      if (task.assignees) {
+        task.assignees.forEach((a: any) => {
+          const uid = a.userId ?? a.user?.id;
+          if (uid && uid !== actorId) {
+            recipientIds.add(uid);
+          }
+        });
+      }
+      for (const recipientId of recipientIds) {
+        void this.notificationService.createAndDispatch({
+          recipientId,
+          senderId: actorId,
+          type,
+          title,
+          message,
+          entityType: 'task',
+          entityId: task.id,
+          actionUrl: `/tasks/${task.id}`,
+          metadata: {
+            taskId: task.id,
+            taskTitle: task.title,
+          },
+        });
+      }
+    } catch {
+      // non-blocking
+    }
+  }
 
   async create(
     columnId: number | undefined,
@@ -152,7 +197,17 @@ export class TaskService {
 
     const completedAt = dto.status === TaskStatus.DONE ? new Date() : null;
 
-    return this.taskRepository.updateTaskStatus(id, dto.status, completedAt);
+    const updated = await this.taskRepository.updateTaskStatus(id, dto.status, completedAt);
+
+    this.notifyTaskStakeholders(
+      task,
+      undefined,
+      dto.status === TaskStatus.DONE ? NotificationType.TASK_COMPLETED : NotificationType.TASK_STATUS_CHANGED,
+      dto.status === TaskStatus.DONE ? `Task completed: "${task.title}"` : `Task status updated: "${task.title}"`,
+      `Status changed to ${dto.status}`,
+    );
+
+    return updated;
   }
 
   async updatePriority(id: number, dto: UpdateTaskPriorityDto) {
@@ -162,7 +217,17 @@ export class TaskService {
       throw new NotFoundException('Task not found');
     }
 
-    return this.taskRepository.updateTaskPriority(id, dto.priority);
+    const updated = await this.taskRepository.updateTaskPriority(id, dto.priority);
+
+    this.notifyTaskStakeholders(
+      task,
+      undefined,
+      NotificationType.TASK_PRIORITY_CHANGED,
+      `Task priority changed: "${task.title}"`,
+      `Priority updated to ${dto.priority}`,
+    );
+
+    return updated;
   }
   async updatePosition(id: number, dto: UpdateTaskPositionDto) {
     const task = await this.taskRepository.findTaskById(id);
@@ -180,7 +245,17 @@ export class TaskService {
       throw new NotFoundException('Task not found');
     }
 
-    return this.taskRepository.completeTask(id);
+    const completed = await this.taskRepository.completeTask(id);
+
+    this.notifyTaskStakeholders(
+      task,
+      undefined,
+      NotificationType.TASK_COMPLETED,
+      `Task completed: "${task.title}"`,
+      'Task was marked as completed',
+    );
+
+    return completed;
   }
   async reopenTask(id: number) {
     const task = await this.taskRepository.findTaskById(id);
@@ -189,7 +264,17 @@ export class TaskService {
       throw new NotFoundException('Task not found');
     }
 
-    return this.taskRepository.reopenTask(id);
+    const reopened = await this.taskRepository.reopenTask(id);
+
+    this.notifyTaskStakeholders(
+      task,
+      undefined,
+      NotificationType.TASK_REOPENED,
+      `Task reopened: "${task.title}"`,
+      'Task was reopened',
+    );
+
+    return reopened;
   }
   async search(projectId: number, dto: TaskSearchDto) {
     const project = await this.taskRepository.findProject(projectId);

@@ -15,10 +15,14 @@ import {
 
 import { BoardRepository } from './repositories/board.repository';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { StorageService } from '../../common/storage/storage.service';
 
 @Injectable()
 export class BoardService {
-  constructor(private readonly boardRepository: BoardRepository) {}
+  constructor(
+    private readonly boardRepository: BoardRepository,
+    private readonly storageService: StorageService,
+  ) {}
 
   private async assertCanAccessProject(
     project: {
@@ -150,6 +154,8 @@ export class BoardService {
       projectId: targetProjectId,
       name: trimmedName,
       description: dto.description?.trim(),
+      icon: dto.icon,
+      coverUrl: dto.coverUrl,
       position,
       createdBy: user.sub,
     });
@@ -244,8 +250,46 @@ export class BoardService {
       name: updatedName,
       description:
         dto.description !== undefined ? dto.description.trim() : undefined,
+      icon: dto.icon !== undefined ? dto.icon : undefined,
+      coverUrl: dto.coverUrl !== undefined ? dto.coverUrl : undefined,
       position: dto.position,
     });
+  }
+
+  async uploadCover(id: number, file: Express.Multer.File, user: JwtPayload) {
+    if (!file) throw new BadRequestException('File is required');
+    const board = await this.boardRepository.findBoardById(id);
+
+    if (!board || !board.project || board.project.deletedAt !== null) {
+      throw new NotFoundException('Board not found');
+    }
+
+    await this.assertCanManageBoard(board.project, user.sub);
+
+    if (board.coverUrl) {
+      const storageKey = board.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'boards');
+    return this.boardRepository.updateBoard(id, { coverUrl: saved.fileUrl });
+  }
+
+  async removeCover(id: number, user: JwtPayload) {
+    const board = await this.boardRepository.findBoardById(id);
+
+    if (!board || !board.project || board.project.deletedAt !== null) {
+      throw new NotFoundException('Board not found');
+    }
+
+    await this.assertCanManageBoard(board.project, user.sub);
+
+    if (board.coverUrl) {
+      const storageKey = board.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    return this.boardRepository.updateBoard(id, { coverUrl: null });
   }
 
   async remove(id: number, user: JwtPayload) {

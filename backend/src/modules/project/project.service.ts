@@ -19,10 +19,14 @@ import {
 } from './dto/request.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ProjectRepository } from './repositories/project.repository';
+import { StorageService } from '../../common/storage/storage.service';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly projectRepository: ProjectRepository) {}
+  constructor(
+    private readonly projectRepository: ProjectRepository,
+    private readonly storageService: StorageService,
+  ) {}
 
   private async assertCanCreateProject(workspaceId: number, userId: number) {
     const workspace = await this.projectRepository.findWorkspace(workspaceId);
@@ -151,6 +155,8 @@ export class ProjectService {
       description: dto.description?.trim(),
       icon: dto.icon,
       color: dto.color,
+      logoUrl: dto.logoUrl,
+      coverUrl: dto.coverUrl,
       status: dto.status || ProjectStatus.ACTIVE,
       startDate: dto.startDate,
       endDate: dto.endDate,
@@ -279,6 +285,54 @@ export class ProjectService {
     });
   }
 
+  async uploadLogo(id: number, file: Express.Multer.File, user: JwtPayload) {
+    if (!file) throw new BadRequestException('File is required');
+    const project = await this.assertCanManageProject(id, user.sub, false);
+
+    if (project.logoUrl) {
+      const storageKey = project.logoUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'projects');
+    return this.projectRepository.update(id, { logoUrl: saved.fileUrl });
+  }
+
+  async removeLogo(id: number, user: JwtPayload) {
+    const project = await this.assertCanManageProject(id, user.sub, false);
+
+    if (project.logoUrl) {
+      const storageKey = project.logoUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    return this.projectRepository.update(id, { logoUrl: null });
+  }
+
+  async uploadCover(id: number, file: Express.Multer.File, user: JwtPayload) {
+    if (!file) throw new BadRequestException('File is required');
+    const project = await this.assertCanManageProject(id, user.sub, false);
+
+    if (project.coverUrl) {
+      const storageKey = project.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'projects');
+    return this.projectRepository.update(id, { coverUrl: saved.fileUrl });
+  }
+
+  async removeCover(id: number, user: JwtPayload) {
+    const project = await this.assertCanManageProject(id, user.sub, false);
+
+    if (project.coverUrl) {
+      const storageKey = project.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    return this.projectRepository.update(id, { coverUrl: null });
+  }
+
   async remove(id: number, user: JwtPayload) {
     await this.assertCanManageProject(id, user.sub, true);
 
@@ -289,3 +343,4 @@ export class ProjectService {
     };
   }
 }
+

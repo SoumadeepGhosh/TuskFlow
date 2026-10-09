@@ -52,6 +52,23 @@ export class CreateWorkspaceDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiProperty({
+    required: false,
+    example: '/uploads/workspaces/logo.png',
+  })
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @ApiProperty({
+    required: false,
+    example: '/uploads/workspaces/cover.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  coverUrl?: string;
 }
 
 export class UpdateWorkspaceDto extends PartialType(CreateWorkspaceDto) {}
+

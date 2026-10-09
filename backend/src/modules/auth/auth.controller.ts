@@ -1,17 +1,30 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { AuthService } from './auth.service';
 import {
+  ChangePasswordDto,
   LoginDto,
   LogoutDto,
   RefreshTokenDto,
   RegisterDto,
+  UpdateProfileDto,
 } from './dto/request.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -33,6 +46,63 @@ export class AuthController {
   @Get('me')
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.authService.getProfile(user);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.sub, dto);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.authService.uploadAvatar(user.sub, file);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Delete('avatar')
+  removeAvatar(@CurrentUser() user: JwtPayload) {
+    return this.authService.removeAvatar(user.sub);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  changePassword(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.sub, dto);
   }
 
   @Post('refresh')

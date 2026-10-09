@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -10,10 +11,14 @@ import {
 } from './dto/request.dto';
 import { WorkspaceRepository } from './repositories/workspace.repository';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { StorageService } from '../../common/storage/storage.service';
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly workspaceRepository: WorkspaceRepository) {}
+  constructor(
+    private readonly workspaceRepository: WorkspaceRepository,
+    private readonly storageService: StorageService,
+  ) {}
 
   async create(createWorkspaceDto: CreateWorkspaceDto, user: JwtPayload) {
     // Simple slug generation
@@ -26,6 +31,8 @@ export class WorkspaceService {
     const workspace = await this.workspaceRepository.createWorkspace({
       name: createWorkspaceDto.name,
       description: createWorkspaceDto.description,
+      logoUrl: createWorkspaceDto.logoUrl,
+      coverUrl: createWorkspaceDto.coverUrl,
       slug,
       ownerId: user.sub,
     });
@@ -83,6 +90,8 @@ export class WorkspaceService {
       name?: string;
       description?: string;
       slug?: string;
+      logoUrl?: string | null;
+      coverUrl?: string | null;
     } = {};
 
     if (updateWorkspaceDto.name) {
@@ -98,7 +107,79 @@ export class WorkspaceService {
       data.description = updateWorkspaceDto.description;
     }
 
+    if (updateWorkspaceDto.logoUrl !== undefined) {
+      data.logoUrl = updateWorkspaceDto.logoUrl;
+    }
+
+    if (updateWorkspaceDto.coverUrl !== undefined) {
+      data.coverUrl = updateWorkspaceDto.coverUrl;
+    }
+
     return this.workspaceRepository.update(id, data);
+  }
+
+  async uploadLogo(id: number, file: Express.Multer.File, user: JwtPayload) {
+    if (!file) throw new BadRequestException('File is required');
+    const workspace = await this.findOne(id, user);
+
+    if (workspace.ownerId !== user.sub) {
+      throw new ForbiddenException('Only the workspace owner can update the logo');
+    }
+
+    if (workspace.logoUrl) {
+      const storageKey = workspace.logoUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'workspaces');
+    return this.workspaceRepository.update(id, { logoUrl: saved.fileUrl });
+  }
+
+  async removeLogo(id: number, user: JwtPayload) {
+    const workspace = await this.findOne(id, user);
+
+    if (workspace.ownerId !== user.sub) {
+      throw new ForbiddenException('Only the workspace owner can remove the logo');
+    }
+
+    if (workspace.logoUrl) {
+      const storageKey = workspace.logoUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    return this.workspaceRepository.update(id, { logoUrl: null });
+  }
+
+  async uploadCover(id: number, file: Express.Multer.File, user: JwtPayload) {
+    if (!file) throw new BadRequestException('File is required');
+    const workspace = await this.findOne(id, user);
+
+    if (workspace.ownerId !== user.sub) {
+      throw new ForbiddenException('Only the workspace owner can update the banner cover');
+    }
+
+    if (workspace.coverUrl) {
+      const storageKey = workspace.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    const saved = await this.storageService.saveFile(file, 'workspaces');
+    return this.workspaceRepository.update(id, { coverUrl: saved.fileUrl });
+  }
+
+  async removeCover(id: number, user: JwtPayload) {
+    const workspace = await this.findOne(id, user);
+
+    if (workspace.ownerId !== user.sub) {
+      throw new ForbiddenException('Only the workspace owner can remove the banner cover');
+    }
+
+    if (workspace.coverUrl) {
+      const storageKey = workspace.coverUrl.replace(/^\/?(api\/)?uploads\//, '');
+      await this.storageService.deleteFile(storageKey);
+    }
+
+    return this.workspaceRepository.update(id, { coverUrl: null });
   }
 
   async remove(id: number, user: JwtPayload) {

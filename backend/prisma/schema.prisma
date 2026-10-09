@@ -17,16 +17,18 @@ model User {
   lastLoginAt      DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  activities       Activity[]
-  comments         Comment[]
-  notifications    Notification[]
-  projectMembers   ProjectMember[]
-  refreshTokens    RefreshToken[]
-  reportedTasks    Task[]
-  assignedTasks    TaskAssignee[]
-  ownedWorkspaces  Workspace[]
-  workspaceMembers WorkspaceMember[]
-  invitationsSent  WorkspaceInvitation[] @relation("WorkspaceInvitationInvitedBy")
+  activities            Activity[]
+  comments              Comment[]
+  notificationsReceived Notification[]        @relation("NotificationRecipient")
+  notificationsSent     Notification[]        @relation("NotificationSender")
+  notificationPreference NotificationPreference?
+  projectMembers        ProjectMember[]
+  refreshTokens         RefreshToken[]
+  reportedTasks         Task[]
+  assignedTasks         TaskAssignee[]
+  ownedWorkspaces       Workspace[]
+  workspaceMembers      WorkspaceMember[]
+  invitationsSent       WorkspaceInvitation[] @relation("WorkspaceInvitationInvitedBy")
 }
 
 model RefreshToken {
@@ -46,6 +48,7 @@ model Workspace {
   slug        String            @unique
   description String?
   logoUrl     String?
+  coverUrl    String?
   ownerId     Int
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -115,6 +118,8 @@ model Project {
   description String?
   icon        String?
   color       String?
+  logoUrl     String?
+  coverUrl    String?
   status      ProjectStatus
   startDate   DateTime?
   endDate     DateTime?
@@ -151,6 +156,8 @@ model Board {
   projectId   Int
   name        String
   description String?
+  icon        String?
+  coverUrl    String?
   position    Int
   createdBy   Int
   createdAt   DateTime      @default(now())
@@ -286,10 +293,34 @@ model Notification {
   message     String
   entityType  String?
   entityId    Int?
+  actionUrl   String?
+  metadata    Json?
+  priority    String?          @default("NORMAL")
   isRead      Boolean          @default(false)
   readAt      DateTime?
+  archivedAt  DateTime?
+  deletedAt   DateTime?
   createdAt   DateTime         @default(now())
-  recipient   User             @relation(fields: [recipientId], references: [id])
+  updatedAt   DateTime         @default(now()) @updatedAt
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  sender      User?            @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, isRead, deletedAt, archivedAt])
+  @@index([recipientId, createdAt])
+}
+
+model NotificationPreference {
+  userId               Int      @id
+  emailNotifications   Boolean  @default(true)
+  browserNotifications Boolean  @default(true)
+  soundEnabled         Boolean  @default(true)
+  taskNotifications    Boolean  @default(true)
+  commentNotifications Boolean  @default(true)
+  mentionNotifications Boolean  @default(true)
+  systemNotifications  Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum UserStatus {
@@ -343,8 +374,25 @@ enum NotificationType {
   WARNING
   ERROR
   TASK_ASSIGNED
-  COMMENT_ADDED
   TASK_UPDATED
+  TASK_COMPLETED
+  TASK_REOPENED
+  TASK_COMMENT
+  TASK_ATTACHMENT
+  TASK_LABEL
+  TASK_PRIORITY_CHANGED
+  TASK_STATUS_CHANGED
+  TASK_DUE
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  BOARD_CREATED
+  COLUMN_CREATED
+  USER_MENTIONED
+  WORKSPACE_INVITE
+  SYSTEM
+  SECURITY
+  EMAIL
+  COMMENT_ADDED
 }
 
 enum InvitationStatus {

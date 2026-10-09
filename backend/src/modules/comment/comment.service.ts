@@ -11,9 +11,15 @@ import {
   UpdateCommentDto,
 } from './dto/request.dto';
 
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '@prisma/client';
+
 @Injectable()
 export class CommentService {
-  constructor(private readonly commentRepository: CommentRepository) {}
+  constructor(
+    private readonly commentRepository: CommentRepository,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async create(dto: CreateCommentDto, user: JwtPayload) {
     const task = await this.commentRepository.findTask(dto.taskId);
@@ -21,11 +27,49 @@ export class CommentService {
       throw new NotFoundException('Task not found');
     }
 
-    return this.commentRepository.createComment({
+    const comment = await this.commentRepository.createComment({
       taskId: dto.taskId,
       userId: user.sub,
       content: dto.content,
     });
+
+    try {
+      const recipientIds = new Set<number>();
+      if (task.reporterId && task.reporterId !== user.sub) {
+        recipientIds.add(task.reporterId);
+      }
+      if (task.assignees) {
+        task.assignees.forEach((a: { userId: number }) => {
+          if (a.userId !== user.sub) recipientIds.add(a.userId);
+        });
+      }
+
+      const actionUrl = task.project?.workspaceId
+        ? `/workspaces/${task.project.workspaceId}/projects/${task.project.id}/tasks/${task.id}`
+        : `/tasks/${task.id}`;
+
+      for (const recipientId of recipientIds) {
+        void this.notificationService.createAndDispatch({
+          recipientId,
+          senderId: user.sub,
+          type: NotificationType.TASK_COMMENT,
+          title: `New comment on "${task.title}"`,
+          message: `${comment.user?.name || user.email || 'Someone'} commented: "${dto.content.slice(0, 100)}"`,
+          entityType: 'task',
+          entityId: task.id,
+          actionUrl,
+          metadata: {
+            taskId: task.id,
+            taskTitle: task.title,
+            commentId: comment.id,
+          },
+        });
+      }
+    } catch {
+      // Non-blocking notification dispatch
+    }
+
+    return comment;
   }
 
   async findAll(query: CommentQueryDto) {

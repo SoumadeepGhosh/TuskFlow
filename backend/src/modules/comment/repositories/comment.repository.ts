@@ -11,6 +11,10 @@ export class CommentRepository {
         id: taskId,
         deletedAt: null,
       },
+      include: {
+        assignees: { select: { userId: true } },
+        project: { select: { id: true, workspaceId: true } },
+      },
     });
   }
 
