@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
@@ -20,41 +25,234 @@ export interface WorkspaceInvitationEmailData {
 }
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
+  private transporter!: nodemailer.Transporter;
+  private currentPort = 587;
+  private isConfigured = false;
+
+  private host = 'localhost';
+  private user?: string;
+  private pass?: string;
+  private defaultFrom = 'TaskFlow <notifications@taskflow.dev>';
 
   constructor(private readonly configService: ConfigService) {
-    const host =
+    this.initConfiguration();
+  }
+
+  private initConfiguration() {
+    this.host =
       this.configService.get<string>('SMTP_HOST') ||
       this.configService.get<string>('MAIL_HOST') ||
       'localhost';
-    const port =
+
+    const configuredPort = Number(
       this.configService.get<number>('SMTP_PORT') ||
-      this.configService.get<number>('MAIL_PORT') ||
-      587;
-    const user =
+        this.configService.get<number>('MAIL_PORT') ||
+        587,
+    );
+
+    this.user =
       this.configService.get<string>('SMTP_USER') ||
       this.configService.get<string>('MAIL_USER');
-    const pass =
+
+    this.pass =
       this.configService.get<string>('SMTP_PASS') ||
       this.configService.get<string>('MAIL_PASSWORD');
 
-    if (user && pass) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        auth: {
-          user,
-          pass,
-        },
-      });
+    this.defaultFrom =
+      this.configService.get<string>('MAIL_FROM') ||
+      'TaskFlow <notifications@taskflow.dev>';
+
+    this.currentPort = configuredPort;
+
+    if (this.user && this.pass) {
+      this.isConfigured = true;
+      this.transporter = this.createTransporterForPort(this.currentPort);
     } else {
-      // In development/test mode without credentials, create a stream/json transporter for logging
+      this.isConfigured = false;
+      this.logger.warn(
+        'EmailService initialized in jsonTransport mode (no SMTP credentials found in environment).',
+      );
       this.transporter = nodemailer.createTransport({
         jsonTransport: true,
       });
     }
+  }
+
+  /**
+   * Builds a production-grade Nodemailer transporter with connection pooling,
+   * enforced IPv4 family (preventing Railway IPv6 hang), and robust timeouts.
+   */
+  private createTransporterForPort(port: number): nodemailer.Transporter {
+    const isSecure = port === 465;
+
+    return nodemailer.createTransport({
+      host: this.host,
+      port,
+      secure: isSecure, // true for 465, false for 587 / 2525
+      auth: {
+        user: this.user,
+        pass: this.pass,
+      },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      family: 4, // ENFORCE IPv4: Prevents Railway Linux containers from hanging on IPv6 route dead-ends
+      connectionTimeout: 10000, // 10s connection timeout
+      greetingTimeout: 10000, // 10s greeting timeout
+      socketTimeout: 15000, // 15s socket activity timeout
+      tls: {
+        rejectUnauthorized: false,
+        servername: this.host,
+      },
+    } as nodemailer.TransportOptions);
+  }
+
+  /**
+   * Verify SMTP connection on application startup and auto-fallback if blocked.
+   */
+  async onModuleInit(): Promise<void> {
+    if (!this.isConfigured) return;
+
+    this.logger.log(
+      `Verifying SMTP connection to ${this.host}:${this.currentPort} (IPv4 enforced)...`,
+    );
+
+    try {
+      await this.transporter.verify();
+      this.logger.log(
+        `✅ SMTP Connection verified successfully on ${this.host}:${this.currentPort} (secure=${this.currentPort === 465}). Ready to send emails.`,
+      );
+    } catch (err: unknown) {
+      const error = err as Error & { code?: string; command?: string };
+      this.logger.warn(
+        `⚠️ Initial SMTP verification failed on port ${this.currentPort} (${error.code || error.message}). Attempting automatic port failover...`,
+      );
+
+      // Railway / cloud egress often blocks port 587. Attempt automatic fallback to 465 (SSL) or 2525.
+      const fallbackPorts = [465, 2525, 587].filter(
+        (p) => p !== this.currentPort,
+      );
+      let recovered = false;
+
+      for (const fallbackPort of fallbackPorts) {
+        try {
+          this.logger.log(
+            `Testing fallback SMTP connection on port ${fallbackPort}...`,
+          );
+          const candidateTransporter =
+            this.createTransporterForPort(fallbackPort);
+          await candidateTransporter.verify();
+
+          this.transporter = candidateTransporter;
+          this.currentPort = fallbackPort;
+          this.logger.log(
+            `✅ Successfully recovered! Active SMTP port switched to ${fallbackPort} (secure=${fallbackPort === 465}).`,
+          );
+          recovered = true;
+          break;
+        } catch {
+          // Continue to next fallback candidate
+        }
+      }
+
+      if (!recovered) {
+        this.logger.error(
+          `❌ All SMTP port connection attempts (587, 465, 2525) failed to reach ${this.host}.
+Please ensure Railway outbound traffic is enabled or your SMTP provider allows connections from your Railway IP.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Resilient mail dispatcher with automatic retry and port failover.
+   */
+  private async sendMailWithRetry(
+    mailOptions: nodemailer.SendMailOptions,
+  ): Promise<nodemailer.SentMessageInfo | null> {
+    if (!this.isConfigured) {
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.debug(
+        `[Mock Email] ${JSON.stringify(mailOptions.to)} - Subject: ${mailOptions.subject}`,
+      );
+      return info;
+    }
+
+    // Try current active transporter first
+    try {
+      return await this.transporter.sendMail(mailOptions);
+    } catch (err: unknown) {
+      const primaryError = err as Error & { code?: string; command?: string };
+      this.logSmtpError(
+        'Primary attempt failed',
+        primaryError,
+        this.currentPort,
+      );
+
+      // If connection timed out or was refused (common Railway egress block on 587), try alternative ports
+      const isConnectionError =
+        primaryError.code === 'ETIMEDOUT' ||
+        primaryError.code === 'ECONNREFUSED' ||
+        primaryError.code === 'ESOCKET' ||
+        primaryError.command === 'CONN';
+
+      if (isConnectionError) {
+        const alternativePorts = [465, 2525, 587].filter(
+          (p) => p !== this.currentPort,
+        );
+
+        for (const port of alternativePorts) {
+          try {
+            this.logger.warn(
+              `Retrying email delivery to ${String(mailOptions.to)} via alternative port ${port}...`,
+            );
+            const fallbackTransporter = this.createTransporterForPort(port);
+            const info = await fallbackTransporter.sendMail(mailOptions);
+
+            // If successful, switch active transporter to this functioning port
+            this.transporter = fallbackTransporter;
+            this.currentPort = port;
+            this.logger.log(
+              `✅ Email successfully delivered via fallback port ${port}! Switched active port to ${port}.`,
+            );
+            return info;
+          } catch (fallbackErr: unknown) {
+            this.logSmtpError(
+              `Fallback attempt on port ${port} failed`,
+              fallbackErr as Error & { code?: string; command?: string },
+              port,
+            );
+          }
+        }
+      }
+
+      return null;
+    }
+  }
+
+  private logSmtpError(
+    context: string,
+    err: Error & { code?: string; command?: string },
+    port: number,
+  ) {
+    const maskedUser = this.user
+      ? this.user.length > 5
+        ? `${this.user.slice(0, 3)}***${this.user.slice(this.user.indexOf('@'))}`
+        : 'configured'
+      : 'none';
+
+    this.logger.error(
+      `[SMTP ERROR] ${context}
+  Host: ${this.host}
+  Port: ${port} (secure: ${port === 465})
+  User: ${maskedUser}
+  Error Code: ${err.code || 'UNKNOWN'}
+  Command: ${err.command || 'UNKNOWN'}
+  Message: ${err.message}`,
+      err.stack,
+    );
   }
 
   async sendTaskAssignedEmail(data: TaskAssignedEmailData): Promise<void> {
@@ -77,23 +275,21 @@ export class EmailService {
     `;
 
     try {
-      const from =
-        this.configService.get<string>('MAIL_FROM') ||
-        '"TaskFlow" <notifications@taskflow.dev>';
-      const info = await this.transporter.sendMail({
-        from,
+      const info = await this.sendMailWithRetry({
+        from: this.defaultFrom,
         to: data.recipientEmail,
         subject,
         html,
       });
 
-      this.logger.log(
-        `Sent task-assigned email to ${data.recipientEmail} for task #${data.taskId}. MessageId: ${info.messageId || 'json-stream'}`,
-      );
+      if (info) {
+        this.logger.log(
+          `Sent task-assigned email to ${data.recipientEmail} for task #${data.taskId}. MessageId: ${info.messageId || 'sent'}`,
+        );
+      }
     } catch (error) {
       this.logger.error(
-        `Failed to send task-assigned email to ${data.recipientEmail}`,
-        error,
+        `Failed to send task-assigned email to ${data.recipientEmail}: ${(error as Error).message}`,
       );
     }
   }
@@ -141,24 +337,29 @@ export class EmailService {
     `;
 
     try {
-      const from =
-        this.configService.get<string>('MAIL_FROM') ||
-        '"TaskFlow" <notifications@taskflow.dev>';
-      const info = await this.transporter.sendMail({
-        from,
+      const info = await this.sendMailWithRetry({
+        from: this.defaultFrom,
         to: data.recipientEmail,
         subject,
         html,
       });
 
-      this.logger.log(
-        `Sent workspace invitation email to ${data.recipientEmail} for workspace ${data.workspaceName}. MessageId: ${info.messageId || 'json-stream'}`,
-      );
+      if (info) {
+        this.logger.log(
+          `Sent workspace invitation email to ${data.recipientEmail} for workspace "${data.workspaceName}". MessageId: ${info.messageId || 'sent'}`,
+        );
+      }
     } catch (error) {
       this.logger.error(
-        `Failed to send workspace invitation email to ${data.recipientEmail}`,
-        error,
+        `Failed to send workspace invitation email to ${data.recipientEmail}: ${(error as Error).message}`,
       );
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    if (this.transporter && 'close' in this.transporter) {
+      (this.transporter as { close: () => void }).close();
+      this.logger.log('EmailService transporter closed');
     }
   }
 }

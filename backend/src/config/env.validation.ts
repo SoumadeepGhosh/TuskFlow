@@ -27,6 +27,19 @@ export const envSchema = z.object({
   REDISPORT: z.coerce.number().optional(),
   REDISPASSWORD: z.string().optional(),
   REDISUSER: z.string().optional(),
+
+  // Email / SMTP
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().optional(),
+  MAIL_USER: z.string().optional(),
+  MAIL_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
+  MAIL_SECURE: z.coerce.boolean().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.coerce.boolean().optional(),
 });
 
 export function validate(config: Record<string, unknown>) {
