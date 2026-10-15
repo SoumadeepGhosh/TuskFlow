@@ -22,8 +22,10 @@ async function bootstrap() {
   const apiPrefix = configService.get<string>('app.apiPrefix')!;
   const appName = configService.get<string>('app.name')!;
 
-  // Global Prefix
-  app.setGlobalPrefix(apiPrefix);
+  // Global Prefix (exclude /email/health for direct health probes)
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['email/health', 'email/(.*)'],
+  });
 
   // Serve static uploads (robust path check)
   const uploadPath = fs.existsSync(path.resolve(process.cwd(), 'backend', 'uploads'))

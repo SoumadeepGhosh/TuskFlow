@@ -8,12 +8,14 @@ export const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   API_PREFIX: z.string().default('api'),
+  APP_URL: z.string().optional(),
+  FRONTEND_URL: z.string().default('http://localhost:3001'),
 
   // Database
-  DATABASE_URL: z.string().min(1),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   // JWT
-  JWT_SECRET: z.string().min(32),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
 
@@ -28,19 +30,19 @@ export const envSchema = z.object({
   REDISPASSWORD: z.string().optional(),
   REDISUSER: z.string().optional(),
 
-  // Email / Brevo API
-  BREVO_API_KEY: z.string().optional(),
-  MAIL_HOST: z.string().optional(),
-  MAIL_PORT: z.coerce.number().optional(),
-  MAIL_USER: z.string().optional(),
-  MAIL_PASSWORD: z.string().optional(),
-  MAIL_FROM: z.string().optional(),
-  MAIL_SECURE: z.coerce.boolean().optional(),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_SECURE: z.coerce.boolean().optional(),
+  // Brevo Transactional Email REST API v3
+  BREVO_API_KEY: z
+    .string({
+      error:
+        'BREVO_API_KEY is required for Brevo email API. Generate a v3 key (starts with "xkeysib-") in Brevo under SMTP & API > API Keys.',
+    })
+    .min(1, 'BREVO_API_KEY cannot be empty'),
+  MAIL_FROM: z
+    .string({
+      error:
+        'MAIL_FROM is required (e.g. "TaskFlow <verified@example.com>").',
+    })
+    .default('TaskFlow <soumadeep.services@gmail.com>'),
 });
 
 export function validate(config: Record<string, unknown>) {
