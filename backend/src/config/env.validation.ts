@@ -28,7 +28,8 @@ export const envSchema = z.object({
   REDISPASSWORD: z.string().optional(),
   REDISUSER: z.string().optional(),
 
-  // Email / SMTP
+  // Email / Brevo API
+  BREVO_API_KEY: z.string().optional(),
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().optional(),
   MAIL_USER: z.string().optional(),

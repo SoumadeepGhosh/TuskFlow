@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 
 export interface TaskAssignedEmailData {
   recipientEmail: string;
@@ -24,240 +19,192 @@ export interface WorkspaceInvitationEmailData {
   expiresAt: Date;
 }
 
-@Injectable()
-export class EmailService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(EmailService.name);
-  private transporter!: nodemailer.Transporter;
-  private currentPort = 587;
-  private isConfigured = false;
+interface BrevoRecipient {
+  email: string;
+  name?: string;
+}
 
-  private host = 'localhost';
-  private user?: string;
-  private pass?: string;
-  private defaultFrom = 'TaskFlow <notifications@taskflow.dev>';
+interface BrevoSender {
+  name: string;
+  email: string;
+}
+
+interface BrevoSendPayload {
+  sender: BrevoSender;
+  to: BrevoRecipient[];
+  subject: string;
+  htmlContent: string;
+}
+
+@Injectable()
+export class EmailService implements OnModuleInit {
+  private readonly logger = new Logger(EmailService.name);
+  private apiKey?: string;
+  private sender: BrevoSender = {
+    name: 'TaskFlow',
+    email: 'notifications@taskflow.dev',
+  };
 
   constructor(private readonly configService: ConfigService) {
     this.initConfiguration();
   }
 
   private initConfiguration() {
-    this.host =
-      this.configService.get<string>('SMTP_HOST') ||
-      this.configService.get<string>('MAIL_HOST') ||
-      'localhost';
+    // 1. Resolve Brevo API key: Support BREVO_API_KEY and fallback to MAIL_PASSWORD if it's a Brevo API key
+    const directKey = this.configService.get<string>('BREVO_API_KEY');
+    const mailPassword = this.configService.get<string>('MAIL_PASSWORD');
 
-    const configuredPort = Number(
-      this.configService.get<number>('SMTP_PORT') ||
-        this.configService.get<number>('MAIL_PORT') ||
-        587,
-    );
+    if (directKey && directKey.trim().length > 0) {
+      this.apiKey = directKey.trim();
+    } else if (mailPassword && mailPassword.startsWith('xkeysib-')) {
+      this.apiKey = mailPassword.trim();
+    }
 
-    this.user =
-      this.configService.get<string>('SMTP_USER') ||
-      this.configService.get<string>('MAIL_USER');
-
-    this.pass =
-      this.configService.get<string>('SMTP_PASS') ||
-      this.configService.get<string>('MAIL_PASSWORD');
-
-    this.defaultFrom =
+    // 2. Parse sender information from MAIL_FROM
+    const rawFrom =
       this.configService.get<string>('MAIL_FROM') ||
       'TaskFlow <notifications@taskflow.dev>';
+    this.sender = this.parseSender(rawFrom);
 
-    this.currentPort = configuredPort;
-
-    if (this.user && this.pass) {
-      this.isConfigured = true;
-      this.transporter = this.createTransporterForPort(this.currentPort);
-    } else {
-      this.isConfigured = false;
-      this.logger.warn(
-        'EmailService initialized in jsonTransport mode (no SMTP credentials found in environment).',
+    if (this.apiKey) {
+      const maskedKey = `${this.apiKey.slice(0, 10)}...${this.apiKey.slice(-4)}`;
+      this.logger.log(
+        `EmailService initialized with Brevo REST API (HTTPS). Key: ${maskedKey}, Sender: "${this.sender.name}" <${this.sender.email}>`,
       );
-      this.transporter = nodemailer.createTransport({
-        jsonTransport: true,
-      });
+    } else {
+      this.logger.warn(
+        'EmailService initialized in mock/log mode. No BREVO_API_KEY found in environment variables.',
+      );
     }
   }
 
   /**
-   * Builds a production-grade Nodemailer transporter with connection pooling,
-   * enforced IPv4 family (preventing Railway IPv6 hang), and robust timeouts.
+   * Parse sender string like 'TaskFlow <support@domain.com>' or 'support@domain.com'
    */
-  private createTransporterForPort(port: number): nodemailer.Transporter {
-    const isSecure = port === 465;
-
-    return nodemailer.createTransport({
-      host: this.host,
-      port,
-      secure: isSecure, // true for 465, false for 587 / 2525
-      auth: {
-        user: this.user,
-        pass: this.pass,
-      },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-      family: 4, // ENFORCE IPv4: Prevents Railway Linux containers from hanging on IPv6 route dead-ends
-      connectionTimeout: 10000, // 10s connection timeout
-      greetingTimeout: 10000, // 10s greeting timeout
-      socketTimeout: 15000, // 15s socket activity timeout
-      tls: {
-        rejectUnauthorized: false,
-        servername: this.host,
-      },
-    } as nodemailer.TransportOptions);
+  private parseSender(raw: string): BrevoSender {
+    const match = raw.match(
+      /^(?:["']?([^"']*)["']?\s+)?<?([^\s<>]+@[^\s<>]+)>?$/,
+    );
+    if (match) {
+      const name = match[1]?.trim() || 'TaskFlow';
+      const email = match[2]?.trim() || 'notifications@taskflow.dev';
+      return { name, email };
+    }
+    return {
+      name: 'TaskFlow',
+      email: raw.includes('@') ? raw.trim() : 'notifications@taskflow.dev',
+    };
   }
 
   /**
-   * Verify SMTP connection on application startup and auto-fallback if blocked.
+   * Verify Brevo API connection and credentials on startup via Brevo HTTPS API.
    */
   async onModuleInit(): Promise<void> {
-    if (!this.isConfigured) return;
-
-    this.logger.log(
-      `Verifying SMTP connection to ${this.host}:${this.currentPort} (IPv4 enforced)...`,
-    );
+    if (!this.apiKey) {
+      return;
+    }
 
     try {
-      await this.transporter.verify();
+      this.logger.log('Verifying Brevo REST API credentials via HTTPS...');
+      const response = await axios.get('https://api.brevo.com/v3/account', {
+        headers: {
+          'api-key': this.apiKey,
+          Accept: 'application/json',
+        },
+        timeout: 10000,
+      });
+
+      const accountEmail = response.data?.email || 'verified';
       this.logger.log(
-        `✅ SMTP Connection verified successfully on ${this.host}:${this.currentPort} (secure=${this.currentPort === 465}). Ready to send emails.`,
+        `✅ Brevo REST API connection verified successfully via HTTPS. Account: ${accountEmail}. Ready to send emails.`,
       );
     } catch (err: unknown) {
-      const error = err as Error & { code?: string; command?: string };
+      const isAxios = axios.isAxiosError(err);
+      const status = isAxios ? err.response?.status : undefined;
+      const details = isAxios
+        ? JSON.stringify(err.response?.data || err.message)
+        : (err as Error).message;
+
       this.logger.warn(
-        `⚠️ Initial SMTP verification failed on port ${this.currentPort} (${error.code || error.message}). Attempting automatic port failover...`,
+        `⚠️ Brevo API verification check returned HTTP ${status || 'ERR'}: ${details}.
+Emails will still be attempted over HTTPS when requested.`,
       );
-
-      // Railway / cloud egress often blocks port 587. Attempt automatic fallback to 465 (SSL) or 2525.
-      const fallbackPorts = [465, 2525, 587].filter(
-        (p) => p !== this.currentPort,
-      );
-      let recovered = false;
-
-      for (const fallbackPort of fallbackPorts) {
-        try {
-          this.logger.log(
-            `Testing fallback SMTP connection on port ${fallbackPort}...`,
-          );
-          const candidateTransporter =
-            this.createTransporterForPort(fallbackPort);
-          await candidateTransporter.verify();
-
-          this.transporter = candidateTransporter;
-          this.currentPort = fallbackPort;
-          this.logger.log(
-            `✅ Successfully recovered! Active SMTP port switched to ${fallbackPort} (secure=${fallbackPort === 465}).`,
-          );
-          recovered = true;
-          break;
-        } catch {
-          // Continue to next fallback candidate
-        }
-      }
-
-      if (!recovered) {
-        this.logger.error(
-          `❌ All SMTP port connection attempts (587, 465, 2525) failed to reach ${this.host}.
-Please ensure Railway outbound traffic is enabled or your SMTP provider allows connections from your Railway IP.`,
-        );
-      }
     }
   }
 
   /**
-   * Resilient mail dispatcher with automatic retry and port failover.
+   * Sends transactional email using official Brevo HTTPS REST API with exponential backoff retry.
+   * Never throws uncaught exceptions so API callers are never failed by email operations.
    */
-  private async sendMailWithRetry(
-    mailOptions: nodemailer.SendMailOptions,
-  ): Promise<nodemailer.SentMessageInfo | null> {
-    if (!this.isConfigured) {
-      const info = await this.transporter.sendMail(mailOptions);
+  private async sendBrevoEmail(payload: BrevoSendPayload): Promise<boolean> {
+    if (!this.apiKey) {
       this.logger.debug(
-        `[Mock Email] ${JSON.stringify(mailOptions.to)} - Subject: ${mailOptions.subject}`,
+        `[Mock Email] To: ${payload.to.map((t) => t.email).join(', ')} | Subject: "${payload.subject}"`,
       );
-      return info;
+      return true;
     }
 
-    // Try current active transporter first
-    try {
-      return await this.transporter.sendMail(mailOptions);
-    } catch (err: unknown) {
-      const primaryError = err as Error & { code?: string; command?: string };
-      this.logSmtpError(
-        'Primary attempt failed',
-        primaryError,
-        this.currentPort,
-      );
+    const maxRetries = 3;
+    let delayMs = 500;
 
-      // If connection timed out or was refused (common Railway egress block on 587), try alternative ports
-      const isConnectionError =
-        primaryError.code === 'ETIMEDOUT' ||
-        primaryError.code === 'ECONNREFUSED' ||
-        primaryError.code === 'ESOCKET' ||
-        primaryError.command === 'CONN';
-
-      if (isConnectionError) {
-        const alternativePorts = [465, 2525, 587].filter(
-          (p) => p !== this.currentPort,
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await axios.post(
+          'https://api.brevo.com/v3/smtp/email',
+          payload,
+          {
+            headers: {
+              'api-key': this.apiKey,
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            timeout: 10000,
+          },
         );
 
-        for (const port of alternativePorts) {
-          try {
-            this.logger.warn(
-              `Retrying email delivery to ${String(mailOptions.to)} via alternative port ${port}...`,
-            );
-            const fallbackTransporter = this.createTransporterForPort(port);
-            const info = await fallbackTransporter.sendMail(mailOptions);
+        const messageId = response.data?.messageId || 'sent';
+        this.logger.log(
+          `✅ Brevo email delivered to ${payload.to.map((t) => t.email).join(', ')}. MessageId: ${messageId}`,
+        );
+        return true;
+      } catch (err: unknown) {
+        const isAxios = axios.isAxiosError(err);
+        const status = isAxios ? err.response?.status : undefined;
+        const responseData = isAxios
+          ? JSON.stringify(err.response?.data)
+          : undefined;
+        const errorMsg = isAxios
+          ? `${err.message}${responseData ? ` (Details: ${responseData})` : ''}`
+          : (err as Error).message;
 
-            // If successful, switch active transporter to this functioning port
-            this.transporter = fallbackTransporter;
-            this.currentPort = port;
-            this.logger.log(
-              `✅ Email successfully delivered via fallback port ${port}! Switched active port to ${port}.`,
-            );
-            return info;
-          } catch (fallbackErr: unknown) {
-            this.logSmtpError(
-              `Fallback attempt on port ${port} failed`,
-              fallbackErr as Error & { code?: string; command?: string },
-              port,
-            );
-          }
+        // Determine if error is transient and retryable (timeouts, rate limits 429, server 5xx)
+        const isTransient =
+          !status ||
+          status === 429 ||
+          (status >= 500 && status <= 504);
+
+        if (isTransient && attempt < maxRetries) {
+          this.logger.warn(
+            `Brevo API attempt ${attempt}/${maxRetries} failed (${errorMsg}). Retrying in ${delayMs}ms...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          delayMs *= 2;
+          continue;
         }
+
+        this.logger.error(
+          `❌ Failed to deliver email to ${payload.to.map((t) => t.email).join(', ')} via Brevo HTTPS: ${errorMsg}`,
+        );
+        return false;
       }
-
-      return null;
     }
-  }
 
-  private logSmtpError(
-    context: string,
-    err: Error & { code?: string; command?: string },
-    port: number,
-  ) {
-    const maskedUser = this.user
-      ? this.user.length > 5
-        ? `${this.user.slice(0, 3)}***${this.user.slice(this.user.indexOf('@'))}`
-        : 'configured'
-      : 'none';
-
-    this.logger.error(
-      `[SMTP ERROR] ${context}
-  Host: ${this.host}
-  Port: ${port} (secure: ${port === 465})
-  User: ${maskedUser}
-  Error Code: ${err.code || 'UNKNOWN'}
-  Command: ${err.command || 'UNKNOWN'}
-  Message: ${err.message}`,
-      err.stack,
-    );
+    return false;
   }
 
   async sendTaskAssignedEmail(data: TaskAssignedEmailData): Promise<void> {
     const subject = `You have been assigned to task: "${data.taskTitle}"`;
-    const html = `
+    const htmlContent = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         <h2 style="color: #2563eb; margin-bottom: 16px;">TaskFlow - New Task Assignment</h2>
         <p>Hello <strong>${data.recipientName}</strong>,</p>
@@ -275,21 +222,15 @@ Please ensure Railway outbound traffic is enabled or your SMTP provider allows c
     `;
 
     try {
-      const info = await this.sendMailWithRetry({
-        from: this.defaultFrom,
-        to: data.recipientEmail,
+      await this.sendBrevoEmail({
+        sender: this.sender,
+        to: [{ email: data.recipientEmail, name: data.recipientName }],
         subject,
-        html,
+        htmlContent,
       });
-
-      if (info) {
-        this.logger.log(
-          `Sent task-assigned email to ${data.recipientEmail} for task #${data.taskId}. MessageId: ${info.messageId || 'sent'}`,
-        );
-      }
     } catch (error) {
       this.logger.error(
-        `Failed to send task-assigned email to ${data.recipientEmail}: ${(error as Error).message}`,
+        `Unexpected error in sendTaskAssignedEmail to ${data.recipientEmail}: ${(error as Error).message}`,
       );
     }
   }
@@ -303,7 +244,7 @@ Please ensure Railway outbound traffic is enabled or your SMTP provider allows c
       day: 'numeric',
     });
     const subject = `You've been invited to join ${data.workspaceName} on TaskFlow`;
-    const html = `
+    const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
         <div style="margin-bottom: 24px;">
           <h2 style="color: #4f46e5; margin: 0 0 8px 0; font-size: 24px; font-weight: 700;">TaskFlow</h2>
@@ -337,29 +278,16 @@ Please ensure Railway outbound traffic is enabled or your SMTP provider allows c
     `;
 
     try {
-      const info = await this.sendMailWithRetry({
-        from: this.defaultFrom,
-        to: data.recipientEmail,
+      await this.sendBrevoEmail({
+        sender: this.sender,
+        to: [{ email: data.recipientEmail }],
         subject,
-        html,
+        htmlContent,
       });
-
-      if (info) {
-        this.logger.log(
-          `Sent workspace invitation email to ${data.recipientEmail} for workspace "${data.workspaceName}". MessageId: ${info.messageId || 'sent'}`,
-        );
-      }
     } catch (error) {
       this.logger.error(
-        `Failed to send workspace invitation email to ${data.recipientEmail}: ${(error as Error).message}`,
+        `Unexpected error in sendWorkspaceInvitationEmail to ${data.recipientEmail}: ${(error as Error).message}`,
       );
-    }
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    if (this.transporter && 'close' in this.transporter) {
-      (this.transporter as { close: () => void }).close();
-      this.logger.log('EmailService transporter closed');
     }
   }
 }
