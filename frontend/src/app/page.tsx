@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { toast } from 'sonner';
+import CustomCursor from '@/components/ui/custom-cursor';
 
 export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -67,6 +68,7 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background font-body-md text-on-surface antialiased selection:bg-primary/10 selection:text-primary min-h-screen flex flex-col">
+      <CustomCursor />
       {/* ─── HEADER ─── */}
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         {/* Top Announcement Bar */}
@@ -176,11 +178,11 @@ export default function LandingPage() {
               Sign in
             </Link>
             <Link
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all shadow-[0_2px_8px_-1px_rgba(15,23,42,0.08)] font-label-md text-label-md"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary !text-white hover:bg-primary-container transition-all shadow-[0_2px_8px_-1px_rgba(15,23,42,0.08)] font-label-md text-label-md"
               href="/register"
             >
-              <span className="font-medium">Get Started</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-on-primary/20 text-on-primary font-code-xs text-code-xs tracking-wider">
+              <span className="font-medium !text-white">Get Started</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white/20 !text-white font-code-xs text-code-xs tracking-wider">
                 ⌘K
               </kbd>
             </Link>
@@ -217,11 +219,11 @@ export default function LandingPage() {
             {/* Action Row */}
             <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
               <Link
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all shadow-[0_2px_12px_rgba(79,70,229,0.25)] font-label-md text-label-md font-semibold text-center"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary !text-white hover:bg-primary-container transition-all shadow-[0_2px_12px_rgba(79,70,229,0.25)] font-label-md text-label-md font-semibold text-center"
                 href="/register"
               >
-                <span>Get Started for Free</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                <span className="!text-white">Get Started for Free</span>
+                <span className="material-symbols-outlined text-[18px] !text-white">arrow_forward</span>
               </Link>
               <a
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-surface-container-lowest text-on-surface border border-outline-variant/40 hover:bg-surface-container-low transition-all shadow-xs font-label-md text-label-md font-medium text-center"
@@ -398,7 +400,7 @@ export default function LandingPage() {
                             <span className="material-symbols-outlined text-[13px]">attach_file</span> 1
                           </span>
                         </div>
-                        <div className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center font-code-xs text-[10px] font-bold">AM</div>
+                        <div className="w-5 h-5 rounded-full bg-primary !text-white flex items-center justify-center font-code-xs text-[10px] font-bold">AM</div>
                       </div>
                     </div>
 
@@ -776,7 +778,7 @@ export default function LandingPage() {
                       >
                         <div className="flex items-center gap-3">
                           <span className={`font-mono text-code-xs font-bold px-2 py-0.5 rounded ${
-                            activeBookPage === idx ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'
+                            activeBookPage === idx ? 'bg-primary !text-white' : 'bg-surface-container text-on-surface-variant'
                           }`}>
                             {chapter.num}
                           </span>
@@ -1544,11 +1546,11 @@ export default function LandingPage() {
               </p>
               <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-all shadow-md font-label-md text-label-md font-semibold"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary !text-white hover:bg-primary-container transition-all shadow-md font-label-md text-label-md font-semibold"
                   href="/register"
                 >
-                  <span>Get Started with TaskFlow</span>
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  <span className="!text-white">Get Started with TaskFlow</span>
+                  <span className="material-symbols-outlined text-[18px] !text-white">arrow_forward</span>
                 </Link>
                 <Link
                   className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-xl bg-surface-container-lowest text-on-surface border border-outline-variant/40 hover:bg-surface-container-low transition-all shadow-xs font-label-md text-label-md font-medium"
