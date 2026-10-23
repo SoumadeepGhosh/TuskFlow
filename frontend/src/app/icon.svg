@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="tf-gradient" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3525cd" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="2" width="64" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0b1c30" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="64" height="64" rx="16" fill="url(#tf-gradient)" />
+  
+  <!-- Subtle border highlight -->
+  <rect x="0.5" y="0.5" width="63" height="63" rx="15.5" stroke="#ffffff" stroke-opacity="0.15" />
+
+  <!-- TaskFlow Icon Geometry: 3 Connected Sprint Kanban Flow Bars -->
+  <!-- Top bar (Backlog / Done) -->
+  <rect x="14" y="16" width="36" height="6" rx="3" fill="#ffffff" />
+  
+  <!-- Middle bar (Active Sprint Flow) -->
+  <rect x="14" y="28" width="24" height="6" rx="3" fill="#ffffff" fill-opacity="0.9" />
+  
+  <!-- Bottom bar (Ship / Release) -->
+  <rect x="14" y="40" width="16" height="6" rx="3" fill="#ffffff" fill-opacity="0.75" />
+
+  <!-- Active cycle sync indicator badge (vibrant cyan/emerald) -->
+  <circle cx="46" cy="38" r="6" fill="#4cd7f6" filter="url(#shadow)" />
+  <circle cx="46" cy="38" r="3" fill="#ffffff" />
+</svg>
+

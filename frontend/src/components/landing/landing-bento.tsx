@@ -2,238 +2,191 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import {
-  Kanban,
-  Zap,
-  ShieldCheck,
-  Bell,
-  LineChart,
-  Command,
-  Sparkles,
-  Layers,
-  ArrowUpRight,
-  Workflow,
-  Search,
-} from 'lucide-react';
 
-export function LandingBento() {
+const features = [
+  {
+    id: 'workspaces',
+    tag: 'Workspaces & Projects',
+    headline: 'One place for every team and every project.',
+    description:
+      'Create dedicated workspaces for each team. Inside each workspace, organize work into projects with their own boards, members, and permissions. Everything is scoped and searchable.',
+    align: 'right',
+    preview: <WorkspacePreview />,
+  },
+  {
+    id: 'kanban',
+    tag: 'Kanban & Sprint Planning',
+    headline: 'Visual boards that match how your team thinks.',
+    description:
+      'Drag and drop tasks across customizable columns. Plan sprints, set due dates, assign members, and track progress at a glance. Built for both engineering and non-engineering teams.',
+    align: 'left',
+    preview: <SprintPreview />,
+  },
+  {
+    id: 'realtime',
+    tag: 'Real-time Collaboration',
+    headline: 'Everyone stays in sync, automatically.',
+    description:
+      'Changes appear instantly for every team member. Comments, status updates, assignments, and activity are all live — powered by WebSocket connections with no polling.',
+    align: 'right',
+    preview: <ActivityPreview />,
+  },
+];
+
+function WorkspacePreview() {
+  const items = ['Design System', 'Backend API', 'Mobile App', 'Marketing Site'];
   return (
-    <section id="features" className="relative py-28 md:py-36">
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-4">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>CORE ARCHITECTURE</span>
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 w-full max-w-sm">
+      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Workspaces</p>
+      <div className="space-y-2">
+        {items.map((name, i) => (
+          <div
+            key={name}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${i === 1 ? 'border-[#4F46E5]/30 bg-[#4F46E5]/5' : 'border-gray-100 hover:border-gray-200'}`}
+          >
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+              ['bg-violet-100 text-violet-600','bg-[#4F46E5] text-white','bg-cyan-100 text-cyan-600','bg-emerald-100 text-emerald-600'][i]
+            }`}>
+              {name[0]}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-800">{name}</p>
+              <p className="text-xs text-gray-400">{[3,8,5,2][i]} projects</p>
+            </div>
           </div>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-tight">
-            Built for speed.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-300">
-              Designed for precision.
-            </span>
-          </h2>
-          <p className="mt-5 text-base sm:text-lg text-slate-400 leading-relaxed font-normal">
-            Every screen, animation, and socket payload in TaskFlow is engineered to eliminate friction
-            so your team spends less time updating status and more time shipping code.
-          </p>
-        </div>
-
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Kanban Board (2 columns wide) */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="md:col-span-2 relative p-8 rounded-3xl bg-[#0F1424]/90 border border-white/10 hover:border-indigo-500/40 shadow-xl overflow-hidden group"
-          >
-            {/* Ambient Background Gradient Glow */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -z-10 group-hover:bg-indigo-500/20 transition-all duration-500" />
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Kanban className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-white/[0.04] text-slate-400 border border-white/[0.08]">
-                Interactive DnD-Kit
-              </span>
-            </div>
-
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Fluid, High-Velocity Kanban Boards
-            </h3>
-            <p className="text-slate-400 text-sm max-w-xl leading-relaxed mb-6">
-              Move tasks with smooth physics, drag between columns, customize sprint workflows, and set WIP limits.
-              Experience zero lag even with thousands of cards.
-            </p>
-
-            {/* Interactive Preview Widget */}
-            <div className="p-4 rounded-2xl bg-[#0A0D18] border border-white/[0.06] grid grid-cols-3 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-                <div className="text-[11px] font-semibold text-slate-300 mb-2">To Do</div>
-                <div className="p-2 rounded-lg bg-white/[0.05] text-[11px] text-slate-200 font-medium border border-white/5">
-                  Auth0 SSO Setup
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-                <div className="text-[11px] font-semibold text-indigo-400 mb-2">In Progress</div>
-                <div className="p-2 rounded-lg bg-indigo-500/10 text-[11px] text-indigo-300 font-medium border border-indigo-500/20">
-                  Brevo HTTPS API
-                </div>
-              </div>
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-                <div className="text-[11px] font-semibold text-emerald-400 mb-2">Done</div>
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-[11px] text-emerald-300 font-medium border border-emerald-500/20">
-                  Prisma 7 Postgres
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2: Sub-50ms Sockets (1 column) */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="relative p-8 rounded-3xl bg-[#0F1424]/90 border border-white/10 hover:border-cyan-500/40 shadow-xl overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl -z-10 group-hover:bg-cyan-500/20 transition-all duration-500" />
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                <Zap className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                &lt; 50ms latency
-              </span>
-            </div>
-
-            <h3 className="text-xl font-bold text-white mb-2">
-              Sub-50ms Realtime Sockets
-            </h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Every assignee change, priority shift, and column move instantly syncs via Socket.IO rooms. No page refreshes required.
-            </p>
-
-            <div className="p-3.5 rounded-2xl bg-[#0A0D18] border border-white/[0.06] flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-              <div className="text-xs">
-                <div className="text-white font-medium">Socket.IO Room Connected</div>
-                <div className="text-slate-500 font-mono text-[10px]">user:8 • room:workspace-14</div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3: Role-Based Access & Workspace Isolation (1 col) */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="relative p-8 rounded-3xl bg-[#0F1424]/90 border border-white/10 hover:border-purple-500/40 shadow-xl overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl -z-10 group-hover:bg-purple-500/20 transition-all duration-500" />
-
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-6">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-
-            <h3 className="text-xl font-bold text-white mb-2">
-              Granular Role-Based Permissions
-            </h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Full workspace isolation with Owner, Admin, Member, and Viewer security scopes backed by encrypted JWT tokens.
-            </p>
-
-            <div className="space-y-2">
-              {['Workspace Owner (Full Control)', 'Member (Create & Edit)', 'Viewer (Read-Only)'].map((role, idx) => (
-                <div
-                  key={role}
-                  className="flex items-center justify-between p-2 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs text-slate-300"
-                >
-                  <span>{role}</span>
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Card 4: Asynchronous BullMQ & Brevo Email (2 cols) */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="md:col-span-2 relative p-8 rounded-3xl bg-[#0F1424]/90 border border-white/10 hover:border-indigo-500/40 shadow-xl overflow-hidden group"
-          >
-            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -z-10 group-hover:bg-indigo-500/20 transition-all duration-500" />
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Bell className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                BullMQ + Brevo v3 HTTPS
-              </span>
-            </div>
-
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Asynchronous Background Workflows & Transactional Mail
-            </h3>
-            <p className="text-slate-400 text-sm max-w-xl leading-relaxed mb-6">
-              Emails, workspace invitations, and task assignments are offloaded to Redis BullMQ queues.
-              API calls return in 10ms with zero SMTP port blocks or container timeouts.
-            </p>
-
-            {/* Micro visual: Pipeline */}
-            <div className="p-4 rounded-2xl bg-[#0A0D18] border border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                <span className="text-white font-medium">Task Assigned Event</span>
-              </div>
-              <span className="text-slate-500">→</span>
-              <div className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 font-mono text-[11px] border border-indigo-500/20">
-                BullMQ Redis Queue
-              </div>
-              <span className="text-slate-500">→</span>
-              <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span>Brevo REST API (HTTP 201)</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 5: Full Keyboard Command Palette (3 cols wide) */}
-          <motion.div
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.2 }}
-            className="md:col-span-3 relative p-8 rounded-3xl bg-gradient-to-r from-[#0F1424] via-[#12182B] to-[#0F1424] border border-white/10 hover:border-purple-500/40 shadow-xl overflow-hidden group"
-          >
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold mb-3">
-                  <Command className="w-3.5 h-3.5" />
-                  <span>LIGHTNING-FAST UX</span>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  Keyboard-First Everything (Raycast & Linear Style)
-                </h3>
-                <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
-                  Never leave your keyboard. Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-xs">⌘K</kbd> to search tasks, assign teammates, switch workspaces, and toggle dark mode in milliseconds.
-                </p>
-              </div>
-
-              {/* Shortcut pills */}
-              <div className="flex flex-wrap gap-2.5 shrink-0">
-                <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
-                  <span className="text-purple-400 font-bold">C</span> New Task
-                </div>
-                <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
-                  <span className="text-cyan-400 font-bold">M</span> Assign Me
-                </div>
-                <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-slate-300 font-mono">
-                  <span className="text-indigo-400 font-bold">⌘/</span> Shortcuts
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 
+function SprintPreview() {
+  const tasks = [
+    { name: 'Setup CI pipeline', done: true, assignee: 'SG' },
+    { name: 'Design token audit', done: true, assignee: 'RK' },
+    { name: 'Auth middleware', done: false, assignee: 'AP' },
+    { name: 'Dashboard widgets', done: false, assignee: 'SG' },
+  ];
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 w-full max-w-sm">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-semibold text-gray-800">Sprint 12</p>
+        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">Active</span>
+      </div>
+      <div className="space-y-2 mb-4">
+        {tasks.map((t) => (
+          <div key={t.name} className="flex items-center gap-3">
+            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${t.done ? 'bg-[#22C55E]' : 'border-2 border-gray-200'}`}>
+              {t.done && (
+                <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                  <path d="M2 6l3 3 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p className={`text-xs flex-1 ${t.done ? 'line-through text-gray-400' : 'text-gray-700'}`}>{t.name}</p>
+            <div className="w-5 h-5 rounded-full bg-[#4F46E5]/20 flex items-center justify-center text-[9px] font-bold text-[#4F46E5]">{t.assignee}</div>
+          </div>
+        ))}
+      </div>
+      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-full w-1/2 rounded-full bg-[#22C55E]" />
+      </div>
+      <p className="text-xs text-gray-400 mt-1.5">2 of 4 completed</p>
+    </div>
+  );
+}
+
+function ActivityPreview() {
+  const events = [
+    { user: 'AP', action: 'moved "Auth middleware" to In Review', time: '2m ago', color: 'bg-blue-500' },
+    { user: 'SG', action: 'commented on "Dashboard widgets"', time: '5m ago', color: 'bg-[#4F46E5]' },
+    { user: 'RK', action: 'assigned "Token audit" to themselves', time: '12m ago', color: 'bg-violet-500' },
+  ];
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 w-full max-w-sm">
+      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Activity Feed</p>
+      <div className="space-y-4">
+        {events.map((e, i) => (
+          <div key={i} className="flex gap-3 items-start">
+            <div className={`w-7 h-7 rounded-full ${e.color} text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5`}>
+              {e.user}
+            </div>
+            <div>
+              <p className="text-xs text-gray-700 leading-snug">{e.action}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{e.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center gap-2 p-2.5 rounded-xl bg-green-50 border border-green-100">
+        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+        <p className="text-[11px] text-green-700 font-medium">3 teammates online</p>
+      </div>
+    </div>
+  );
+}
+
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.12 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 28 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' as const } },
+};
+
+export function LandingBento() {
+  return (
+    <section id="features" className="py-24 px-6 max-w-7xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center mb-16"
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#4F46E5] mb-3">Features</p>
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+          Built for how modern teams work
+        </h2>
+        <p className="mt-4 text-gray-500 max-w-xl mx-auto text-lg">
+          Every feature was designed around one question: does this help teams ship faster?
+        </p>
+      </motion.div>
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="space-y-20"
+      >
+        {features.map((f) => (
+          <motion.div
+            key={f.id}
+            variants={itemVariants}
+            className={`flex flex-col ${f.align === 'left' ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12 lg:gap-16`}
+          >
+            {/* Copy */}
+            <div className="flex-1 max-w-lg">
+              <span className="inline-block text-xs font-semibold text-[#4F46E5] bg-[#4F46E5]/8 px-3 py-1 rounded-full mb-4">
+                {f.tag}
+              </span>
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight tracking-tight">
+                {f.headline}
+              </h3>
+              <p className="mt-4 text-gray-500 leading-relaxed">{f.description}</p>
+            </div>
+            {/* Visual */}
+            <div className="flex-1 flex justify-center">
+              {f.preview}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}

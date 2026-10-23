@@ -3,88 +3,53 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export function LandingCta() {
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden">
-      {/* Aurora Ambient Glow Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-950/20 to-[#0B0F19] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-cyan-500/20 blur-[140px] pointer-events-none" />
+    <section className="py-24 px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-2xl mx-auto text-center bg-white rounded-3xl border border-gray-200 shadow-sm px-8 py-16"
+      >
+        <div className="w-12 h-12 rounded-2xl bg-[#4F46E5] flex items-center justify-center mx-auto mb-6">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+            <path d="M3 4h10M3 8h7M3 12h5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
 
-      <div className="relative max-w-5xl mx-auto px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="p-10 sm:p-16 rounded-3xl border border-white/10 bg-[#0F1424]/90 backdrop-blur-2xl shadow-2xl relative overflow-hidden"
-        >
-          {/* Subtle inner grid */}
-          <div
-            className="absolute inset-0 opacity-[0.08] pointer-events-none"
-            style={{
-              backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px)`,
-              backgroundSize: '24px 24px',
-            }}
-          />
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+          Start managing your projects today.
+        </h2>
+        <p className="mt-4 text-gray-500 text-lg leading-relaxed">
+          Create your workspace in seconds. No setup required. No credit card.
+        </p>
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>START BUILDING TODAY</span>
-          </div>
-
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-tight">
-            Ready to 10x your team’s{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-300">
-              shipping velocity?
-            </span>
-          </h2>
-
-          <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Join 10,000+ developers, designers, and engineering leaders who have eliminated task clutter and accelerated their sprint cycles with TaskFlow.
-          </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              size="lg"
-              asChild
-              className="w-full sm:w-auto h-13 px-8 text-base font-semibold rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-xl shadow-indigo-500/30 border border-white/20 transition-all hover:scale-105 active:scale-95"
-            >
-              <Link href="/register" className="flex items-center gap-2">
-                <span>Get Started for Free</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="w-full sm:w-auto h-13 px-7 text-base font-medium rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 hover:text-white border-white/10 hover:border-white/20 backdrop-blur-md"
-            >
-              <Link href="/login">Sign in to your team</Link>
-            </Button>
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Free for up to 10 members
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              No credit card required
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Full Socket.IO realtime access
-            </span>
-          </div>
-        </motion.div>
-      </div>
+        <div className="mt-8 flex flex-wrap gap-3 justify-center">
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 bg-[#4F46E5] text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-[#4338CA] transition-all duration-200 hover:-translate-y-0.5 shadow-sm shadow-[#4F46E5]/20 hover:shadow-md hover:shadow-[#4F46E5]/30"
+          >
+            Get Started — it's free
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <a
+            href="https://github.com/SoumadeepGhosh/TuskFlow"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 px-6 py-3 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </motion.div>
     </section>
   );
 }
-

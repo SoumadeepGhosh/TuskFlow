@@ -3,314 +3,202 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Sparkles,
-  Play,
-  CheckCircle2,
-  Users,
-  Clock,
-  Layers,
-  Zap,
-  Activity,
-  Flame,
-  Search,
-  Command,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, delay: i * 0.1, ease: 'easeOut' as const },
+  }),
+};
+
+/* Minimal inline Kanban preview — no fake screenshots */
+function KanbanPreview() {
+  const columns = [
+    {
+      title: 'To Do',
+      color: 'bg-gray-100 text-gray-600',
+      dot: 'bg-gray-400',
+      cards: [
+        { title: 'Design system tokens', priority: 'Medium', tag: 'Design' },
+        { title: 'API documentation', priority: 'Low', tag: 'Docs' },
+      ],
+    },
+    {
+      title: 'In Progress',
+      color: 'bg-blue-50 text-blue-600',
+      dot: 'bg-blue-500',
+      cards: [
+        { title: 'User auth flow', priority: 'High', tag: 'Backend' },
+        { title: 'Dashboard layout', priority: 'High', tag: 'Frontend' },
+      ],
+    },
+    {
+      title: 'Done',
+      color: 'bg-green-50 text-green-700',
+      dot: 'bg-green-500',
+      cards: [
+        { title: 'Project scaffolding', priority: 'High', tag: 'Setup' },
+        { title: 'CI pipeline', priority: 'Medium', tag: 'DevOps' },
+      ],
+    },
+  ];
+
+  const priorityColor: Record<string, string> = {
+    High: 'text-red-500 bg-red-50',
+    Medium: 'text-amber-600 bg-amber-50',
+    Low: 'text-gray-500 bg-gray-100',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.7, delay: 0.35, ease: 'easeOut' as const }}
+      className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-100/80 overflow-hidden"
+    >
+      {/* Window chrome */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+        <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+        <span className="ml-4 text-xs text-gray-400 font-medium">TaskFlow — Sprint 12</span>
+      </div>
+
+      {/* Board header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span className="text-sm font-semibold text-gray-800">Kanban Board</span>
+        <div className="flex gap-2">
+          <span className="text-xs px-2.5 py-1 rounded-md bg-[#4F46E5]/10 text-[#4F46E5] font-medium">Sprint 12</span>
+          <span className="text-xs px-2.5 py-1 rounded-md bg-gray-100 text-gray-500">6 tasks</span>
+        </div>
+      </div>
+
+      {/* Columns */}
+      <div className="flex gap-3 p-4 bg-gray-50/60 overflow-x-auto">
+        {columns.map((col) => (
+          <div key={col.title} className="flex-1 min-w-[160px]">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg mb-2 ${col.color} w-fit text-xs font-semibold`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
+              {col.title}
+            </div>
+            <div className="flex flex-col gap-2">
+              {col.cards.map((card) => (
+                <div
+                  key={card.title}
+                  className="bg-white rounded-xl border border-gray-200/80 px-3 py-2.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default"
+                >
+                  <p className="text-xs font-medium text-gray-800 leading-tight mb-2">{card.title}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#4F46E5]/10 text-[#4F46E5] font-medium">{card.tag}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${priorityColor[card.priority]}`}>
+                      {card.priority}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
 
 export function LandingHero() {
   return (
-    <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col items-center text-center">
-        {/* 1. Eyebrow Announcement Pill */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-8 backdrop-blur-md shadow-inner"
-        >
-          <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="font-semibold text-white">TaskFlow 2.0</span>
-          <span className="text-white/40">•</span>
-          <span className="text-slate-300">Engineered for high-velocity teams</span>
-          <ArrowRight className="w-3 h-3 text-indigo-400" />
-        </motion.div>
-
-        {/* 2. Massive Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-white max-w-5xl leading-[1.08]"
-        >
-          Manage Projects{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-cyan-300 animate-gradient">
-            Faster Than Ever.
-          </span>
-        </motion.h1>
-
-        {/* 3. Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-6 text-lg sm:text-xl text-slate-400 max-w-3xl leading-relaxed font-normal"
-        >
-          TaskFlow unifies sub-50ms realtime sockets, Linear-fast Kanban boards, sprint
-          planning, and automated background workflows in a distraction-free dark interface.
-        </motion.p>
-
-        {/* 4. Action CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
-        >
-          <Button
-            size="lg"
-            asChild
-            className="w-full sm:w-auto h-13 px-8 text-base font-semibold rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-xl shadow-indigo-500/25 border border-white/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+    <section className="pt-28 pb-20 px-6 max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row items-center gap-14 lg:gap-20">
+        {/* Left copy */}
+        <div className="flex-1 max-w-xl">
+          <motion.div
+            custom={0}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-[#4F46E5]/20 bg-[#4F46E5]/5 text-[#4F46E5] mb-6"
           >
-            <Link href="/register" className="flex items-center gap-2.5">
-              <span>Start Free with GitHub</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </Button>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#4F46E5] animate-pulse" />
+            Now with real-time collaboration
+          </motion.div>
 
-          <Button
-            size="lg"
-            variant="outline"
-            asChild
-            className="w-full sm:w-auto h-13 px-7 text-base font-medium rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] text-slate-200 hover:text-white border-white/10 hover:border-white/20 backdrop-blur-md transition-all"
+          <motion.h1
+            custom={1}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="text-4xl md:text-5xl lg:text-[52px] font-bold text-gray-900 leading-[1.1] tracking-tight"
           >
-            <a href="#showcase" className="flex items-center gap-2">
-              <Play className="w-4 h-4 text-cyan-400 fill-cyan-400/20" />
-              <span>Explore Interactive Demo</span>
-            </a>
-          </Button>
-        </motion.div>
+            Project management
+            <br />
+            <span className="text-[#4F46E5]">that keeps your team</span>
+            <br />
+            moving.
+          </motion.h1>
 
-        {/* 5. Trust micro-badge */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400"
-        >
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            Free for up to 10 members
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            No credit card required
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            Instant 2-minute setup
-          </span>
-        </motion.div>
+          <motion.p
+            custom={2}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="mt-6 text-lg text-gray-500 leading-relaxed"
+          >
+            TaskFlow brings your workspaces, boards, and team together. Plan sprints, track tasks,
+            and ship faster — without the overhead.
+          </motion.p>
 
-        {/* 6. Hero Dashboard Preview with Floating Cards & Glow */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          className="relative mt-16 sm:mt-20 w-full max-w-6xl mx-auto"
-        >
-          {/* Ambient Multi-Layer Radial Glow */}
-          <div className="absolute -inset-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 rounded-3xl blur-2xl opacity-30 -z-10" />
-
-          {/* Container Mockup */}
-          <div className="relative rounded-2xl md:rounded-3xl border border-white/10 bg-[#0E1322]/90 backdrop-blur-2xl shadow-2xl shadow-black/80 overflow-hidden text-left p-4 sm:p-6 md:p-8">
-            {/* Top Mockup Window Controls */}
-            <div className="flex items-center justify-between pb-6 mb-6 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-3 text-xs font-mono text-slate-400 hidden sm:inline">
-                  TaskFlow • Engineering Sprint Cycle #14
-                </span>
-              </div>
-
-              {/* Command Palette Mock Search */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-slate-400">
-                <Search className="w-3.5 h-3.5 text-slate-500" />
-                <span>Search tasks, assignees, docs...</span>
-                <span className="ml-4 px-1.5 py-0.5 rounded bg-white/10 text-[10px] text-slate-300 font-mono">
-                  ⌘K
-                </span>
-              </div>
-
-              {/* Live socket connection status */}
-              <div className="flex items-center gap-2 text-xs font-medium text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="hidden sm:inline">Realtime Synced</span>
-              </div>
-            </div>
-
-            {/* Kanban Columns Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Column 1: IN PROGRESS */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-300 pb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                    <span>In Progress</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white/[0.06] text-[10px] text-slate-400">
-                      3
-                    </span>
-                  </div>
-                  <Flame className="w-3.5 h-3.5 text-amber-400" />
-                </div>
-
-                {/* Card 1 */}
-                <div className="p-3.5 rounded-xl bg-[#13192B] border border-white/[0.08] hover:border-indigo-500/40 transition-all shadow-md group cursor-pointer">
-                  <div className="flex items-center justify-between text-[11px] mb-2">
-                    <span className="font-mono text-indigo-400 font-medium">TF-104</span>
-                    <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-semibold text-[10px]">
-                      P0 Urgent
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors">
-                    Brevo Transactional Email HTTPS REST API
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                    Migrate SMTP port timeout to Brevo v3 HTTPS endpoint with retry backoff.
-                  </p>
-                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-[10px] text-white font-bold">
-                        SG
-                      </div>
-                      <span>Soumadeep</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-slate-400">
-                      <Clock className="w-3 h-3 text-slate-500" />
-                      <span>Today</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card 2 */}
-                <div className="p-3.5 rounded-xl bg-[#13192B] border border-white/[0.08] hover:border-indigo-500/40 transition-all shadow-md group cursor-pointer">
-                  <div className="flex items-center justify-between text-[11px] mb-2">
-                    <span className="font-mono text-purple-400 font-medium">TF-108</span>
-                    <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold text-[10px]">
-                      High
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">
-                    Realtime Socket.IO Gateway Rooms
-                  </h4>
-                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-cyan-600 flex items-center justify-center text-[10px] text-white font-bold">
-                        AL
-                      </div>
-                      <span>Alex L.</span>
-                    </div>
-                    <span className="text-emerald-400 font-medium">95% done</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 2: IN CODE REVIEW */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-300 pb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-purple-400" />
-                    <span>In Review</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white/[0.06] text-[10px] text-slate-400">
-                      2
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 3 */}
-                <div className="p-3.5 rounded-xl bg-[#13192B] border border-white/[0.08] hover:border-purple-500/40 transition-all shadow-md group cursor-pointer">
-                  <div className="flex items-center justify-between text-[11px] mb-2">
-                    <span className="font-mono text-cyan-400 font-medium">TF-92</span>
-                    <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold text-[10px]">
-                      Normal
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">
-                    Interactive Gantt & Sprint Calendar
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                    Multi-month view with drag re-schedule and dependency link paths.
-                  </p>
-                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-[10px] text-white font-bold">
-                        EM
-                      </div>
-                      <span>Elena M.</span>
-                    </div>
-                    <span className="text-purple-400">PR #88 Ready</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 3: COMPLETED */}
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 flex flex-col gap-3">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-300 pb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span>Completed</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-white/[0.06] text-[10px] text-slate-400">
-                      14
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 4 */}
-                <div className="p-3.5 rounded-xl bg-[#13192B]/80 border border-emerald-500/20 shadow-md group cursor-pointer opacity-90">
-                  <div className="flex items-center justify-between text-[11px] mb-2">
-                    <span className="font-mono text-emerald-400 font-medium line-through">
-                      TF-76
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold text-[10px]">
-                      Shipped
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-slate-200">
-                    Neon PostgreSQL Schema Migrations
-                  </h4>
-                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="text-emerald-400 font-medium">Verified in Prod</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Floating Live Notification Pill (Simulated Real-time socket event) */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
-              className="absolute bottom-6 right-6 p-3 rounded-2xl bg-[#111625]/95 border border-indigo-500/30 shadow-2xl backdrop-blur-xl flex items-center gap-3 hidden sm:flex max-w-sm"
+          <motion.div
+            custom={3}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="mt-8 flex flex-wrap gap-3"
+          >
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 bg-[#4F46E5] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#4338CA] transition-all duration-200 shadow-sm shadow-[#4F46E5]/20 hover:shadow-md hover:shadow-[#4F46E5]/30 hover:-translate-y-0.5"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/30">
-                <Sparkles className="w-4 h-4" />
+              Get Started — it's free
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </Link>
+            <a
+              href="#features"
+              className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 px-5 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
+              See how it works
+            </a>
+          </motion.div>
+
+          <motion.div
+            custom={4}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="mt-8 flex items-center gap-5"
+          >
+            {[
+              { label: 'No credit card required' },
+              { label: 'Free to start' },
+              { label: 'Open source' },
+            ].map(({ label }) => (
+              <div key={label} className="flex items-center gap-1.5 text-xs text-gray-400">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="2">
+                  <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {label}
               </div>
-              <div className="text-left text-xs">
-                <p className="font-semibold text-white">Elena mentioned you</p>
-                <p className="text-slate-400 line-clamp-1">
-                  "Ready for review on #TF-104 @Soumadeep"
-                </p>
-              </div>
-              <span className="text-[10px] text-slate-500 font-mono ml-auto">Just now</span>
-            </motion.div>
-          </div>
-        </motion.div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Right — Kanban preview */}
+        <div className="flex-1 flex justify-center lg:justify-end w-full">
+          <KanbanPreview />
+        </div>
       </div>
     </section>
   );
 }
-

@@ -355,25 +355,38 @@ export class TaskRepository {
     });
   }
 
-  findMyTasks(userId: number) {
-    return this.prisma.task.findMany({
+  async findMyTasks(userId: number) {
+    // Return tasks where user is the reporter OR an assignee (deduplicated)
+    const tasks = await this.prisma.task.findMany({
       where: {
-        reporterId: userId,
         deletedAt: null,
+        OR: [
+          { reporterId: userId },
+          { assignees: { some: { userId } } },
+        ],
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
       include: {
         reporter: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatarUrl: true },
+            },
           },
         },
+        labels: { include: { label: true } },
+        _count: { select: { comments: true, attachments: true } },
       },
+    });
+    const seen = new Set<number>();
+    return tasks.filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      return true;
     });
   }
 

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosError } from 'axios';
@@ -49,7 +51,12 @@ export interface EmailHealthStatus {
     companyName?: string;
     credits?: Array<{ type: string; credits: number; creditsType: string }>;
   } | null;
-  verifiedSenders: Array<{ id: number; email: string; name?: string; active: boolean }>;
+  verifiedSenders: Array<{
+    id: number;
+    email: string;
+    name?: string;
+    active: boolean;
+  }>;
   senderIsVerified: boolean;
   lastApiResponse: {
     timestamp: string;
@@ -76,6 +83,8 @@ export class EmailService implements OnModuleInit {
     name: 'TaskFlow',
     email: 'notifications@taskflow.dev',
   };
+
+  private frontendUrl: string = 'http://localhost:3001';
 
   private lastApiResponse: {
     timestamp: string;
@@ -106,7 +115,13 @@ export class EmailService implements OnModuleInit {
       'TaskFlow <notifications@taskflow.dev>';
     this.sender = this.parseSender(rawFrom);
 
-    // 3. Log initial status
+    // 3. Resolve frontend URL for email links
+    this.frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('APP_URL') ||
+      'http://localhost:3001';
+
+    // 4. Log initial status
     if (this.apiKey) {
       const keyType = this.detectKeyType(this.apiKey);
       if (keyType === 'smtp_key_invalid') {
@@ -470,9 +485,7 @@ export class EmailService implements OnModuleInit {
 
         // Determine if transient error (rate limit 429 or server error 500-504, or network timeout)
         const isTransient =
-          !status ||
-          status === 429 ||
-          (status >= 500 && status <= 504);
+          !status || status === 429 || (status >= 500 && status <= 504);
 
         if (isTransient && attempt < maxRetries) {
           this.logger.warn(
@@ -503,7 +516,7 @@ export class EmailService implements OnModuleInit {
         </div>
         <p>Please log in to TaskFlow to view details, update status, and collaborate with your team.</p>
         <div style="margin-top: 24px;">
-          <a href="/tasks/${data.taskId}" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Task</a>
+          <a href="${this.frontendUrl}/tasks/${data.taskId}" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Task</a>
         </div>
         <hr style="margin-top: 32px; border: none; border-top: 1px solid #e2e8f0;" />
         <p style="font-size: 12px; color: #64748b;">This is an automated notification from TaskFlow.</p>
@@ -512,7 +525,9 @@ export class EmailService implements OnModuleInit {
 
     const payload: BrevoSendPayload = {
       sender: this.sender,
-      to: [{ email: data.recipientEmail.trim(), name: data.recipientName.trim() }],
+      to: [
+        { email: data.recipientEmail.trim(), name: data.recipientName.trim() },
+      ],
       subject,
       htmlContent,
     };

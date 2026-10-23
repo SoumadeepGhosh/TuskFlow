@@ -33,7 +33,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     const socketUrl =
-      process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
+      process.env.NEXT_PUBLIC_SOCKET_URL || (process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '') : 'http://localhost:3000');
 
     const newSocket = io(socketUrl, {
       auth: {

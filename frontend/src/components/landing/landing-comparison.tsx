@@ -1,129 +1,180 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Check, X, Sparkles, Zap, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const comparisons = [
+const advantages = [
   {
-    feature: 'Realtime Sync & Collaboration',
-    taskflow: '< 50ms Instant WebSocket Rooms',
-    legacy: 'Manual Refresh or 15s Polling',
-    taskflowBetter: true,
+    title: 'Workspace isolation',
+    description:
+      'Each workspace has its own members, roles, and projects. No permission bleed between teams.',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
   },
   {
-    feature: 'Page Load & Navigation Speed',
-    taskflow: 'Sub-second Next.js 16 App Router',
-    legacy: '3–8s Heavy Cluttered Bundles',
-    taskflowBetter: true,
+    title: 'Real-time, not just polling',
+    description:
+      'TaskFlow uses persistent WebSocket connections. Updates arrive the moment they happen — no page refresh needed.',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      </svg>
+    ),
   },
   {
-    feature: 'Notification & Email Pipeline',
-    taskflow: 'BullMQ Queue + Brevo HTTPS (Zero Timeout)',
-    legacy: 'Blocked SMTP Ports or Paid Add-ons',
-    taskflowBetter: true,
+    title: 'Granular permissions',
+    description:
+      'Owner, Admin, Member, and Viewer roles give you precise control over who can see, edit, or manage anything.',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93A10 10 0 0 1 19.07 19.07" />
+      </svg>
+    ),
   },
   {
-    feature: 'Keyboard-First UX (Cmd+K)',
-    taskflow: 'Full Raycast/Linear style shortcuts',
-    legacy: 'Mouse-heavy click marathons',
-    taskflowBetter: true,
-  },
-  {
-    feature: 'Sprint & Kanban Simplicity',
-    taskflow: 'Opinionated, distraction-free velocity',
-    legacy: '400+ Configuration screens & plugins',
-    taskflowBetter: true,
-  },
-  {
-    feature: 'Dark Mode Aesthetic',
-    taskflow: 'Handcrafted OLED Dark Theme (#0B0F19)',
-    legacy: 'Patchy high-contrast invert themes',
-    taskflowBetter: true,
+    title: 'No vendor lock-in',
+    description:
+      'Open source codebase. Self-host it, extend it, or use our hosted version. Your data stays yours.',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 3 21 3 21 8" />
+        <line x1="4" y1="20" x2="21" y2="3" />
+        <polyline points="21 16 21 21 16 21" />
+        <line x1="15" y1="15" x2="21" y2="21" />
+      </svg>
+    ),
   },
 ];
 
+const comparisons = [
+  { aspect: 'Real-time updates', taskflow: true, typical: false },
+  { aspect: 'Open source', taskflow: true, typical: false },
+  { aspect: 'Workspace isolation', taskflow: true, typical: true },
+  { aspect: 'Sprint planning built-in', taskflow: true, typical: false },
+  { aspect: 'Granular role permissions', taskflow: true, typical: true },
+  { aspect: 'Free to start', taskflow: true, typical: false },
+  { aspect: 'Activity timeline', taskflow: true, typical: true },
+  { aspect: 'WebSocket notifications', taskflow: true, typical: false },
+];
+
 export function LandingComparison() {
+  const [activeTab, setActiveTab] = useState<'why' | 'compare'>('why');
+
   return (
-    <section id="solutions" className="relative py-28 md:py-36 border-t border-white/[0.06] bg-[#0B0F19]/40">
-      <div className="max-w-6xl mx-auto px-6">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-4">
-            <Zap className="w-3.5 h-3.5" />
-            <span>UNMATCHED PERFORMANCE</span>
-          </div>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-tight">
-            TaskFlow vs.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-400 via-slate-300 to-slate-500">
-              Legacy Project Tools
-            </span>
-          </h2>
-          <p className="mt-5 text-base sm:text-lg text-slate-400 leading-relaxed font-normal">
-            See how TaskFlow eliminates the latency, bloat, and endless configuration that slows down modern engineering teams.
-          </p>
+    <section className="py-24 px-6 max-w-7xl mx-auto" id="why">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-10"
+      >
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#4F46E5] mb-3">Why TaskFlow</p>
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+          Designed differently
+        </h2>
+        <p className="mt-4 text-gray-500 max-w-xl mx-auto">
+          Most project management tools are either too complex or too simple. TaskFlow hits the sweet spot.
+        </p>
+      </motion.div>
+
+      {/* Tab switcher */}
+      <div className="flex justify-center mb-10">
+        <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+          {(['why', 'compare'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`relative text-sm px-5 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab === 'why' ? 'Key Advantages' : 'Feature Comparison'}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Comparison Table */}
-        <div className="relative rounded-3xl border border-white/10 bg-[#0F1424]/90 backdrop-blur-2xl shadow-2xl overflow-hidden">
-          {/* Header Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 p-6 sm:p-8 border-b border-white/[0.08] bg-white/[0.02]">
-            <div className="text-sm font-semibold uppercase tracking-wider text-slate-400 font-mono">
-              Capability
-            </div>
-            <div className="hidden md:flex items-center gap-2 text-base font-bold text-indigo-400">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              <span>TaskFlow</span>
-              <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-[10px] text-indigo-300 border border-indigo-500/20">
-                Next-Gen
-              </span>
-            </div>
-            <div className="hidden md:block text-sm font-semibold text-slate-500">
-              Traditional Project Management
-            </div>
-          </div>
-
-          {/* Table Rows */}
-          <div className="divide-y divide-white/[0.06]">
-            {comparisons.map((item, idx) => (
+      <AnimatePresence mode="wait">
+        {activeTab === 'why' ? (
+          <motion.div
+            key="why"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          >
+            {advantages.map((adv, i) => (
               <motion.div
-                key={item.feature}
-                initial={{ opacity: 0, y: 10 }}
+                key={adv.title}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                className="grid grid-cols-1 md:grid-cols-3 p-6 sm:p-7 hover:bg-white/[0.02] transition-colors items-center gap-4 md:gap-0"
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                className="flex gap-4 p-5 rounded-2xl border border-gray-200 bg-white hover:border-[#4F46E5]/30 hover:shadow-sm transition-all duration-200"
               >
-                {/* Feature Name */}
-                <div className="font-semibold text-white text-sm sm:text-base">
-                  {item.feature}
+                <div className="w-9 h-9 rounded-xl bg-[#4F46E5]/10 text-[#4F46E5] flex items-center justify-center shrink-0">
+                  {adv.icon}
                 </div>
-
-                {/* TaskFlow Side */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-200">
-                    {item.taskflow}
-                  </span>
-                </div>
-
-                {/* Legacy Side */}
-                <div className="flex items-center gap-3 md:pl-2">
-                  <div className="w-6 h-6 rounded-full bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
-                    <X className="w-3.5 h-3.5 text-rose-400" />
-                  </div>
-                  <span className="text-sm text-slate-400">
-                    {item.legacy}
-                  </span>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">{adv.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{adv.description}</p>
                 </div>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="compare"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+            className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm"
+          >
+            <div className="grid grid-cols-3 bg-gray-50 border-b border-gray-200 px-5 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+              <span>Feature</span>
+              <span className="text-center text-[#4F46E5]">TaskFlow</span>
+              <span className="text-center">Typical tools</span>
+            </div>
+            {comparisons.map((row, i) => (
+              <div
+                key={row.aspect}
+                className={`grid grid-cols-3 px-5 py-3.5 border-b border-gray-100 last:border-0 text-sm ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}
+              >
+                <span className="text-gray-700">{row.aspect}</span>
+                <span className="text-center">
+                  {row.taskflow ? (
+                    <svg className="inline w-4 h-4 text-[#22C55E]" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg className="inline w-4 h-4 text-gray-300" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M4 8h8" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className="text-center">
+                  {row.typical ? (
+                    <svg className="inline w-4 h-4 text-gray-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    <svg className="inline w-4 h-4 text-gray-300" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M5 5l6 6M11 5l-6 6" strokeLinecap="round" />
+                    </svg>
+                  )}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
-

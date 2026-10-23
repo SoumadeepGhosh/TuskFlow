@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: "Inter", var(--font-sans), sans-serif;
+  --font-mono: "JetBrains Mono", var(--font-geist-mono), monospace;
+  --font-heading: "Geist", var(--font-sans), sans-serif;
+
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -26,6 +27,54 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* TaskFlow 2.4 Design System Tokens */
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d3e4fe;
+  --color-surface: #f8f9ff;
+  --color-surface-bright: #f8f9ff;
+  --color-surface-dim: #cbdbf5;
+  --color-on-surface: #0b1c30;
+  --color-on-surface-variant: #464555;
+  --color-outline: #777587;
+  --color-outline-variant: #c7c4d8;
+  --color-primary-fixed: #e2dfff;
+  --color-primary-fixed-dim: #c3c0ff;
+  --color-on-primary-fixed: #0f0069;
+  --color-on-primary-fixed-variant: #3323cc;
+  --color-primary-container: #4f46e5;
+  --color-on-primary-container: #dad7ff;
+  --color-secondary-container: #57dffe;
+  --color-secondary-fixed: #acedff;
+  --color-secondary-fixed-dim: #4cd7f6;
+  --color-on-secondary-container: #006172;
+  --color-on-secondary-fixed: #001f26;
+  --color-on-secondary-fixed-variant: #004e5c;
+  --color-tertiary: #005523;
+  --color-tertiary-container: #007030;
+  --color-tertiary-fixed: #6bff8f;
+  --color-tertiary-fixed-dim: #4ae176;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #63f889;
+  --color-on-tertiary-fixed: #002109;
+  --color-on-tertiary-fixed-variant: #005321;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+  --color-inverse-surface: #213145;
+  --color-inverse-on-surface: #eaf1ff;
+  --color-inverse-primary: #c3c0ff;
+
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2rem;
+
   --radius-sm: calc(var(--radius) * 0.7);
   --radius-md: calc(var(--radius) * 0.85);
   --radius-lg: var(--radius);
@@ -35,31 +84,29 @@
 }
 
 :root {
-  /* TaskFlow Design System Neutrals */
-  --background: #FAFBFC;
-  --foreground: #111827;
+  --background: #f8f9ff;
+  --foreground: #0b1c30;
   --card: #FFFFFF;
-  --card-foreground: #111827;
+  --card-foreground: #0b1c30;
   --popover: #FFFFFF;
-  --popover-foreground: #111827;
+  --popover-foreground: #0b1c30;
 
-  /* Primary Brand: Indigo #5B5CEB */
-  --primary: #5B5CEB;
+  --primary: #3525cd;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #F5F7FA;
-  --secondary-foreground: #111827;
+  --secondary: #00687a;
+  --secondary-foreground: #FFFFFF;
   --muted: #F1F4F9;
-  --muted-foreground: #6B7280;
+  --muted-foreground: #464555;
   --accent: #EEF0FF;
-  --accent-foreground: #5B5CEB;
+  --accent-foreground: #3525cd;
 
-  --destructive: #EF4444;
+  --destructive: #ba1a1a;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E9EDF3;
-  --input: #E9EDF3;
-  --ring: #5B5CEB;
+  --border: #c7c4d8;
+  --input: #c7c4d8;
+  --ring: #3525cd;
 
   --radius: 14px;
 }
@@ -95,6 +142,49 @@
   }
 }
 
+/* Material Symbols font configuration */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* Typography tokens mapping */
+.font-headline-xl { font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 600; }
+.font-headline-lg { font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 600; }
+.font-headline-md { font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 600; }
+.font-headline-sm { font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 600; }
+.font-body-lg { font-family: "Inter", sans-serif; }
+.font-body-md { font-family: "Inter", sans-serif; }
+.font-body-sm { font-family: "Inter", sans-serif; }
+.font-label-md { font-family: "Inter", sans-serif; font-weight: 500; }
+.font-label-sm { font-family: "Inter", sans-serif; font-weight: 500; }
+.font-code-xs { font-family: "JetBrains Mono", monospace; }
+.font-code-sm { font-family: "JetBrains Mono", monospace; }
+
+.text-headline-xl { font-size: 48px; line-height: 52px; letter-spacing: -0.03em; }
+.text-headline-lg { font-size: 32px; line-height: 38px; letter-spacing: -0.03em; }
+.text-headline-md { font-size: 22px; line-height: 28px; letter-spacing: -0.02em; }
+.text-headline-sm { font-size: 16px; line-height: 24px; letter-spacing: -0.015em; }
+.text-body-lg { font-size: 16px; line-height: 26px; letter-spacing: -0.01em; }
+.text-body-md { font-size: 14px; line-height: 22px; letter-spacing: -0.005em; }
+.text-body-sm { font-size: 13px; line-height: 18px; }
+.text-label-md { font-size: 12px; line-height: 16px; letter-spacing: 0.01em; }
+.text-label-sm { font-size: 11px; line-height: 14px; letter-spacing: 0.02em; }
+.text-code-xs { font-size: 11px; line-height: 14px; }
+.text-code-sm { font-size: 12px; line-height: 16px; letter-spacing: -0.01em; }
+
+.shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
 .shadow-soft {
   box-shadow: 0 10px 35px rgba(15, 23, 42, 0.06);
 }
@@ -102,3 +192,16 @@
 .shadow-soft-hover {
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.10);
 }
+
+/* Hide scrollbar utility for sleek book-page scroll without scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+

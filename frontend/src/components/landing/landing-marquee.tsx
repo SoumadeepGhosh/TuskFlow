@@ -3,50 +3,46 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const brands = [
-  { name: 'Vercel', logo: '▲ Vercel' },
-  { name: 'Supabase', logo: '⚡ Supabase' },
-  { name: 'Linear', logo: '◬ Linear' },
-  { name: 'Raycast', logo: '✦ Raycast' },
-  { name: 'Stripe', logo: '/// Stripe' },
-  { name: 'Resend', logo: '✉ Resend' },
-  { name: 'Retool', logo: '⚙ Retool' },
-  { name: 'PlanetScale', logo: '⚿ PlanetScale' },
-  { name: 'Prisma', logo: '▲ Prisma' },
-  { name: 'Neon', logo: '✦ Neon DB' },
+const capabilities = [
+  'Workspaces',
+  'Kanban Boards',
+  'Sprint Planning',
+  'Task Management',
+  'Team Collaboration',
+  'Roles & Permissions',
+  'Activity Timeline',
+  'Real-time Updates',
+  'Notifications',
+  'Analytics',
 ];
 
 export function LandingMarquee() {
   return (
-    <section className="relative py-12 border-y border-white/[0.06] bg-[#0B0F19]/60 overflow-hidden backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-6 mb-8 text-center">
-        <p className="text-xs font-semibold tracking-widest uppercase text-slate-400 font-mono">
-          Empowering high-velocity engineering teams at modern tech leaders
+    <section className="py-12 border-y border-gray-100 bg-gray-50/60">
+      <div className="max-w-7xl mx-auto px-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 text-center mb-6">
+          Everything your team needs
         </p>
-      </div>
-
-      {/* Infinite Scrolling Track */}
-      <div className="relative w-full flex overflow-x-hidden [mask-image:linear-gradient(to_right,transparent,black_20%,black_80%,transparent)]">
         <motion.div
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{
-            duration: 25,
-            ease: 'linear',
-            repeat: Infinity,
-          }}
-          className="flex gap-16 shrink-0 items-center justify-around whitespace-nowrap"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-wrap justify-center gap-2.5"
         >
-          {[...brands, ...brands].map((brand, i) => (
-            <div
-              key={`${brand.name}-${i}`}
-              className="flex items-center gap-2.5 text-lg font-bold text-slate-400 hover:text-white transition-colors duration-200 cursor-default font-mono tracking-tight"
+          {capabilities.map((cap) => (
+            <span
+              key={cap}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-600 bg-white border border-gray-200 px-3.5 py-1.5 rounded-full shadow-sm"
             >
-              <span className="text-xl opacity-80">{brand.logo}</span>
-            </div>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#22C55E" strokeWidth="2.5">
+                <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {cap}
+            </span>
           ))}
         </motion.div>
       </div>
     </section>
   );
 }
-

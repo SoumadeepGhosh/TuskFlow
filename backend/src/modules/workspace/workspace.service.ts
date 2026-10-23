@@ -20,12 +20,28 @@ export class WorkspaceService {
     private readonly storageService: StorageService,
   ) {}
 
-  async create(createWorkspaceDto: CreateWorkspaceDto, user: JwtPayload) {
-    // Simple slug generation
-    const slug = createWorkspaceDto.name
+  private async generateUniqueSlug(name: string, excludeId?: number): Promise<string> {
+    const baseSlug = name
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, '-');
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'workspace';
+
+    let candidate = baseSlug;
+    let counter = 1;
+
+    while (true) {
+      const existing = await this.workspaceRepository.findBySlug(candidate);
+      if (!existing || (excludeId && existing.id === excludeId)) {
+        return candidate;
+      }
+      candidate = `${baseSlug}-${counter}`;
+      counter++;
+    }
+  }
+
+  async create(createWorkspaceDto: CreateWorkspaceDto, user: JwtPayload) {
+    const slug = await this.generateUniqueSlug(createWorkspaceDto.name);
 
     // Create workspace
     const workspace = await this.workspaceRepository.createWorkspace({
@@ -97,10 +113,7 @@ export class WorkspaceService {
     if (updateWorkspaceDto.name) {
       data.name = updateWorkspaceDto.name;
 
-      data.slug = updateWorkspaceDto.name
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-');
+      data.slug = await this.generateUniqueSlug(updateWorkspaceDto.name, id);
     }
 
     if (updateWorkspaceDto.description !== undefined) {
